@@ -1,0 +1,37 @@
+{
+    "folders": [
+        {
+            "path": "../../../Desktop/IPATACT"
+        },
+        {
+            "path": "../../../Desktop/sample"
+        },
+        {
+            "path": "../ActivityLOGIN"
+        },
+        {
+            "path": "../Macorol"
+        },
+        {
+            "path": "../MIDTERM"
+        },
+        {
+            "path": "../WEBDEV2"
+        },
+        {
+            "path": "../FastFood"
+        },
+        {
+            "path": "../IPATACT"
+        },
+        {
+            "path": "."
+        },
+        {
+            "path": ".."
+        }
+    ],
+    "settings": {
+        "liveServer.settings.multiRootWorkspaceName": "library"
+    }
+}
