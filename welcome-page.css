@@ -1,0 +1,105 @@
+body {
+    background: linear-gradient(135deg, #f6f8fa 0%, #e3e0dc 100%);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.main-header {
+    background: linear-gradient(90deg, #532c2e 60%, #3e2723a9 100%);
+    color: #fff;
+    padding: 36px 0 24px 0;
+    box-shadow: 0 2px 12px rgba(44,62,80,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.main-header h1 {
+    margin: 0 0 0 32px;
+    font-size: 2.8rem;
+    letter-spacing: 3px;
+    font-weight: 700;
+    text-shadow: 1px 2px 8px #2c3e50a0;
+    text-align: left;
+}
+
+.main-header nav {
+    margin: 0 32px 0 0;
+    display: flex;
+    gap: 12px;
+}
+
+.main-header .btn {
+    background: #532c2e;
+    color: #fff;
+    padding: 12px 32px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.05rem;
+    transition: background 0.2s, box-shadow 0.2s;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+}
+
+.main-header .btn:hover {
+    background: #411f1f;
+    box-shadow: 0 4px 16px rgba(44,62,80,0.13);
+}
+
+.welcome-container {
+    background: #fff;
+    max-width: 520px;
+    margin: 70px auto 0 auto;
+    padding: 48px 36px 36px 36px;
+    border-radius: 20px;
+    box-shadow: 0 6px 32px rgba(44,62,80,0.13);
+    text-align: center;
+    animation: fadeIn 1s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+
+.welcome-container h1 {
+    margin-top: 0;
+    color: #411f1f;
+    font-size: 3.2rem;
+    margin-bottom: 18px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.welcome-container h2 {
+    margin-top: 0;
+    color: #2c3e50;
+    font-size: 2rem;
+    margin-bottom: 18px;
+    font-weight: 600;
+}
+
+.welcome-container p {
+    color: #444;
+    font-size: 1.15rem;
+    line-height: 1.8;
+    margin-bottom: 0;
+}
+
+.welcome-container a {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.welcome-container a:hover {
+    text-decoration: underline;
+    color: #217dbb;
+}

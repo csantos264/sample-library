@@ -50,7 +50,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             $stmt->bind_param("i", $_SESSION['user_id']);
             $stmt->execute();
             $stmt->bind_result($full_name);
-            if ($stmt->fetch()) {
+            if ($stmt->fetch() && !empty($full_name)) {
                 $admin_name = explode(' ', trim($full_name))[0];
             }
             $stmt->close();
@@ -64,7 +64,14 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
         <li><a href="#" class="nav-link" data-section="books"><i class="fas fa-book"></i> Books</a></li>
         <li><a href="#" class="nav-link" data-section="users"><i class="fas fa-users"></i> Users</a></li>
         <li><a href="#" class="nav-link" data-section="borrowings"><i class="fas fa-history"></i> Borrowings</a></li>
-        <?php $pending_requests_count = $conn->query("SELECT COUNT(*) as count FROM extension_requests WHERE status = 'pending'")->fetch_assoc()['count']; ?>
+        <?php
+        // For notification badge (handle possible null)
+        $pending_requests_count = 0;
+        $pending_result = $conn->query("SELECT COUNT(*) as count FROM extension_requests WHERE status = 'pending'");
+        if ($pending_result && $row = $pending_result->fetch_assoc()) {
+            $pending_requests_count = (int)$row['count'];
+        }
+        ?>
         <li><a href="#" class="nav-link" data-section="requests"><i class="fas fa-hourglass-half"></i> Extension Requests <?php if($pending_requests_count > 0): ?><span class="notification-badge"><?php echo $pending_requests_count; ?></span><?php endif; ?></a></li>
     </ul>
 </aside>
@@ -228,11 +235,24 @@ if (isset($_POST['deny_request'])) {
         <?php if ($err): ?><div class="alert error"><i class="fas fa-exclamation-circle"></i> <?php echo $err; ?></div><?php endif; ?>
 
         <?php
-        // Fetch stats for the dashboard
-        $total_books = $conn->query("SELECT COUNT(*) as count FROM books")->fetch_assoc()['count'];
-        $total_users = $conn->query("SELECT COUNT(*) as count FROM users WHERE role != 'admin'")->fetch_assoc()['count'];
-        $issued_books = $conn->query("SELECT COUNT(*) as count FROM borrowings WHERE returned = 0")->fetch_assoc()['count'];
-        $overdue_books = $conn->query("SELECT COUNT(*) as count FROM borrowings WHERE returned = 0 AND return_date < CURDATE()")->fetch_assoc()['count'];
+        // Fetch stats for the dashboard (handle possible nulls)
+        $total_books = 0;
+        $total_users = 0;
+        $issued_books = 0;
+        $overdue_books = 0;
+
+        if ($result = $conn->query("SELECT COUNT(*) as count FROM books")) {
+            $total_books = (int)$result->fetch_assoc()['count'];
+        }
+        if ($result = $conn->query("SELECT COUNT(*) as count FROM users WHERE role != 'admin'")) {
+            $total_users = (int)$result->fetch_assoc()['count'];
+        }
+        if ($result = $conn->query("SELECT COUNT(*) as count FROM borrowings WHERE returned = 0")) {
+            $issued_books = (int)$result->fetch_assoc()['count'];
+        }
+        if ($result = $conn->query("SELECT COUNT(*) as count FROM borrowings WHERE returned = 0 AND return_date < CURDATE()")) {
+            $overdue_books = (int)$result->fetch_assoc()['count'];
+        }
         ?>
         <section id="section-dashboard" class="admin-section active">
             <h2>Dashboard</h2>
@@ -317,10 +337,14 @@ if (isset($_POST['deny_request'])) {
                         <td><?php echo htmlspecialchars($user['email']); ?></td>
                         <td><?php echo htmlspecialchars($user['role']); ?></td>
                         <td>
+                            <?php if ($user['id'] != $_SESSION['user_id']): // Prevent self-delete ?>
                             <form method="POST" style="display:inline;">
                                 <input type="hidden" name="user_id" value="<?php echo (int)$user['id']; ?>">
                                 <button type="submit" name="delete_user" class="button delete" onclick="return confirm('Delete this user?')"><i class="fas fa-trash"></i> Delete</button>
                             </form>
+                            <?php else: ?>
+                            <span>-</span>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endwhile; else: ?>
