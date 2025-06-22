@@ -79,112 +79,85 @@ if (isset($_POST['change_password'])) {
 <head>
     <meta charset="UTF-8">
     <title>Settings | Book Stop</title>
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .settings-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
-            margin: 2rem auto;
-            max-width: 900px;
-        }
-        .settings-card {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-        }
-        .settings-card h3 {
-            margin-top: 0;
-            color: var(--primary);
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #555;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .submit-btn {
-            background-color: var(--primary);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            width: 100%;
-            margin-top: auto;
-        }
-        .submit-btn:hover {
-            opacity: 0.9;
-        }
-        .alert {
-            padding: 12px 20px;
-            margin: 10px 0 20px 0;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .alert-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .settings-header {
-            background: #2a1617;
-            color: #fff;
-            padding: 1.2rem 2rem;
-            border-bottom: 2.5px solid #6d4c41;
-            text-align: center;
-            font-size: 1.5rem;
-            letter-spacing: 1px;
-        }
-        body {
-            background: var(--bg);
-        }
+        
     </style>
 </head>
 <body>
-    <div class="settings-header">
-        <i class="fas fa-cog"></i> Settings
-        <a href="student_page.php" style="float:right; color:#fff; text-decoration:none; font-size:1rem;">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
-    </div>
-    <div class="settings-container">
-        <div class="settings-card">
-            <h3><i class="fas fa-user"></i> Profile Information</h3>
-            <?php if ($success): ?>
-                <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-            <?php elseif ($error): ?>
-                <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
-            <?php endif; ?>
-            <form method="POST">
-                <div class="form-group">
-                    <label for="full_name">Full Name</label>
-                    <input type="text" id="full_name" name="full_name" value="<?= htmlspecialchars($user['full_name']) ?>" required>
+    <div class="dashboard-layout">
+        <!-- Sidebar Start -->
+        <div class="dashboard-sidebar">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <h3>
+                    <?php if (isset($user['full_name'])): ?>
+                        <?= htmlspecialchars($user['full_name']) ?>
+                    <?php else: ?>
+                        Student
+                    <?php endif; ?>
+                </h3>
+                <p>Student</p>
+            </div>
+            <nav>
+                <ul class="sidebar-menu">
+                    <li><a href="student_page.php"><i class="fas fa-tachometer-alt" style="margin-right:8px;"></i>Dashboard</a></li>
+                    <li><a href="settings.php" class="active"><i class="fas fa-cog" style="margin-right:8px;"></i>Settings</a></li>
+                    <li><a href="my-profile.php"><i class="fas fa-user" style="margin-right:8px;"></i>My Profile</a></li>
+                    <li><a href="borrow-book.php"><i class="fas fa-book-reader" style="margin-right:8px;"></i>Borrow Book</a></li>
+                    <li><a href="login_register.php?logout=1" style="color:#a66e4a;"><i class="fas fa-sign-out-alt" style="margin-right:8px;"></i>Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+        <!-- Sidebar End -->
+
+        <!-- Main Content Start -->
+        <div style="flex:1;">
+            <div class="settings-header">
+               <h2> Book Stop </h2>
+            </div>
+            <div class="settings-container">
+                <div class="settings-card">
+                    <h3><i class="fas fa-user"></i> Profile Information</h3>
+                    <?php if ($success): ?>
+                        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+                    <?php elseif ($error): ?>
+                        <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+                    <?php endif; ?>
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="full_name">Full Name</label>
+                            <input type="text" id="full_name" name="full_name" value="<?= htmlspecialchars($user['full_name']) ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required>
+                        </div>
+                        <button type="submit" name="update_profile" class="submit-btn">Update Profile</button>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email"
+                <div class="settings-card">
+                    <h3><i class="fas fa-key"></i> Change Password</h3>
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="current_password">Current Password</label>
+                            <input type="password" id="current_password" name="current_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new_password">New Password</label>
+                            <input type="password" id="new_password" name="new_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm New Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        <button type="submit" name="change_password" class="submit-btn">Change Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Main Content End -->
+    </div>
+</body>
+</html>

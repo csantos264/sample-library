@@ -23,8 +23,14 @@ if (isset($_POST['login'])) {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['email'] = $user['email'];
-            $_SESSION['user_type'] = $user['user_type'];
-            header("Location: student_page.php");
+            $_SESSION['user_type'] = $user['user_type']; // This should be 'admin' or 'user'
+
+            // REDIRECT BASED ON ROLE
+            if ($user['user_type'] === 'admin') {
+                header("Location: admin_page.php");
+            } else {
+                header("Location: browse-books.php");
+            }
             exit();
         }
     }

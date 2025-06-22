@@ -2,6 +2,16 @@
 
 session_start();
 
+if (isset($_SESSION['user_id'])) {
+    if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin') {
+        header('Location: admin_page.php');
+        exit();
+    } else {
+        header('Location: browse-books.php');
+        exit();
+    }
+}
+
 function getUnsetSessionVars($keys) {
     $values = [];
     foreach ($keys as $key) {
@@ -33,11 +43,15 @@ getUnsetSessionVars(['login_error', 'register_error', 'register_success', 'activ
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Stop</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="browse-books.css">
 </head>
 <body>
    <header class="main-header">
-        <h1>Book Stop</h1>
+        <h1>
+            <i class="fas fa-book-reader"></i>
+            <a href="welcome-page.php" class="home-btn">Book Stop</a>
+        </h1>
         <nav>
             <a href="browse-books.php" class="btn">Books</a>
             <a href="index.php" class="btn">Login</a>

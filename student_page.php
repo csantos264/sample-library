@@ -110,100 +110,12 @@ $settings_nav_class = ($current_section === 'settings') ? 'active' : '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - Library Management System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="dashboard.css">
-    <style>
-        .alert {
-            padding: 12px 20px;
-            margin: 10px 20px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .alert-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .settings-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 1.5rem;
-        }
-        .settings-card {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            display: flex; 
-            flex-direction: column; 
-        }
-        .settings-card form {
-            display: flex; 
-            flex-direction: column; 
-            flex-grow: 1; 
-        }
-        .settings-card h3 {
-            margin-top: 0;
-            color: var(--primary);
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #555;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .submit-btn {
-            background-color: var(--primary);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            width: 100%;
-            margin-top: auto; 
-        }
-        .submit-btn:hover {
-            opacity: 0.9;
-        }
-        .dashboard-welcome {
-            padding: 2rem;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(44,62,80,0.08);
-            margin-top: 2rem;
-            text-align: center;
-        }
-        .dashboard-welcome h2 {
-            margin-bottom: 1rem;
-        }
-        .dashboard-welcome p {
-            color: #555;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+
 </head>
 <body class="dashboard">
     <header class="dashboard-header">
-        <h1 style="font-size:1.35rem;"><i class="fas fa-book-reader"></i> Book Stop</h1>
+        <h1><i class="fas fa-book-reader"></i> Book Stop</h1>
         <a href="login_register.php?logout=1" class="logout-btn">
             <i class="fas fa-sign-out-alt"></i>
             Logout
@@ -230,8 +142,11 @@ $settings_nav_class = ($current_section === 'settings') ? 'active' : '';
             </div>
             <nav>
                 <ul class="sidebar-menu">
-                    <li><a href="?section=dashboard" id="nav-dashboard" class="nav-link <?php echo $dashboard_nav_class; ?>"><span>Dashboard</span></a></li>
-                    <li><a href="?section=settings" id="nav-settings" class="nav-link <?php echo $settings_nav_class; ?>"><span>Settings</span></a></li>
+                      <li><a href="student_page.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'student_page.php' ? ' active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="my-profile.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-profile.php' ? ' active' : '' ?>"><i class="fas fa-user"></i> My Profile</a></li>
+                    <li><a href="catalog.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'catalog.php' ? ' active' : '' ?>"><i class="fas fa-book"></i> Browse Books</a></li>
+                    <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrow Book</a></li>
+                    <li><a href="settings.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'settings.php' ? ' active' : '' ?>"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
         </div>
@@ -240,7 +155,7 @@ $settings_nav_class = ($current_section === 'settings') ? 'active' : '';
             <div id="section-dashboard" class="dashboard-section" style="<?php echo $dashboard_section_style; ?>">
                 <div class="dashboard-welcome">
                     <h2>Welcome, <?php echo htmlspecialchars($user['full_name']); ?>!</h2>
-                    <p>This is your student dashboard. Use the sidebar to update your profile or change your password in the settings.</p>
+                    <p><center>This is your student dashboard. Use the sidebar to update your profile or change your password in the settings.</center></p>
                 </div>
 
                 <!-- Dashboard Widgets Start -->
@@ -250,12 +165,17 @@ $settings_nav_class = ($current_section === 'settings') ? 'active' : '';
                         <i class="fas fa-book-reader fa-2x" style="color: #532c2e;"></i>
                         <h3 style="margin: 1rem 0 0.5rem 0; font-size: 1.2rem;">My Borrowed Books</h3>
                         <?php
-                        $borrowed = $conn->prepare("SELECT COUNT(*) as total FROM borrowings WHERE user_id = ?");
-                        $borrowed->bind_param("i", $user_id);
-                        $borrowed->execute();
-                        $borrowed_result = $borrowed->get_result();
-                        $borrowed_count = $borrowed_result ? $borrowed_result->fetch_assoc()['total'] : 0;
-                        $borrowed->close();
+                        $borrowed_count = 0;
+                        $borrowed = $conn->prepare("SELECT COUNT(*) as total FROM borrow_records WHERE user_id = ?");
+                        if ($borrowed) {
+                            $borrowed->bind_param("i", $user_id);
+                            $borrowed->execute();
+                            $borrowed_result = $borrowed->get_result();
+                            $borrowed_count = $borrowed_result ? $borrowed_result->fetch_assoc()['total'] : 0;
+                            $borrowed->close();
+                        } else {
+                            echo "<div style='color:#b71c1c;'>Query error: " . htmlspecialchars($conn->error) . "</div>";
+                        }
                         ?>
                         <div style="font-size: 2rem; font-weight: bold;"><?php echo $borrowed_count; ?></div>
                     </div>
@@ -265,12 +185,17 @@ $settings_nav_class = ($current_section === 'settings') ? 'active' : '';
                         <i class="fas fa-exclamation-triangle fa-2x" style="color: #b71c1c;"></i>
                         <h3 style="margin: 1rem 0 0.5rem 0; font-size: 1.2rem;">Overdue Books</h3>
                         <?php
-                        $overdue = $conn->prepare("SELECT COUNT(*) as total FROM borrowings WHERE user_id = ? AND due_date < CURDATE() AND returned_at IS NULL");
-                        $overdue->bind_param("i", $user_id);
-                        $overdue->execute();
-                        $overdue_result = $overdue->get_result();
-                        $overdue_count = $overdue_result ? $overdue_result->fetch_assoc()['total'] : 0;
-                        $overdue->close();
+                        $overdue_count = 0;
+                        $overdue = $conn->prepare("SELECT COUNT(*) as total FROM borrow_records WHERE user_id = ? AND due_date < CURDATE() AND return_date IS NULL");
+                        if ($overdue) {
+                            $overdue->bind_param("i", $user_id);
+                            $overdue->execute();
+                            $overdue_result = $overdue->get_result();
+                            $overdue_count = $overdue_result ? $overdue_result->fetch_assoc()['total'] : 0;
+                            $overdue->close();
+                        } else {
+                            echo "<div style='color:#b71c1c;'>Query error: " . htmlspecialchars($conn->error) . "</div>";
+                        }
                         ?>
                         <div style="font-size: 2rem; font-weight: bold;"><?php echo $overdue_count; ?></div>
                     </div>
@@ -281,44 +206,48 @@ $settings_nav_class = ($current_section === 'settings') ? 'active' : '';
                 <div style="margin: 3rem auto 0 auto; max-width: 900px;">
                     <h3 style="margin-bottom: 1rem; color: #532c2e;">Recent Borrowing Activity</h3>
                     <div style="overflow-x:auto;">
-                    <table style="width:100%; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(44,62,80,0.08); border-collapse:collapse;">
-                        <thead>
-                            <tr style="background:#f5e9e0;">
-                                <th style="padding:0.75rem;">Book Title</th>
-                                <th style="padding:0.75rem;">Borrowed On</th>
-                                <th style="padding:0.75rem;">Due Date</th>
-                                <th style="padding:0.75rem;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $recent = $conn->prepare("SELECT b.title, br.borrowed_at, br.due_date, br.returned_at
-                                FROM borrowings br
-                                JOIN books b ON br.book_id = b.book_id
-                                WHERE br.user_id = ?
-                                ORDER BY br.borrowed_at DESC
-                                LIMIT 5");
-                            $recent->bind_param("i", $user_id);
-                            $recent->execute();
-                            $recent_result = $recent->get_result();
-                            if ($recent_result && $recent_result->num_rows > 0) {
-                                while ($row = $recent_result->fetch_assoc()) {
-                                    $status = $row['returned_at'] ? 'Returned' : (strtotime($row['due_date']) < time() ? 'Overdue' : 'Borrowed');
-                                    $status_color = $row['returned_at'] ? '#388e3c' : (strtotime($row['due_date']) < time() ? '#b71c1c' : '#C5832B');
-                                    echo "<tr>
-                                        <td style='padding:0.75rem;'>" . htmlspecialchars($row['title']) . "</td>
-                                        <td style='padding:0.75rem;'>" . htmlspecialchars(date('M d, Y', strtotime($row['borrowed_at']))) . "</td>
-                                        <td style='padding:0.75rem;'>" . htmlspecialchars(date('M d, Y', strtotime($row['due_date']))) . "</td>
-                                        <td style='padding:0.75rem; color: $status_color; font-weight:600;'>" . $status . "</td>
-                                    </tr>";
+                        <table class="reservation-table" style="width:100%; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(44,62,80,0.08); border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f5e9e0;">
+                                    <th style="padding:0.75rem; text-align:center;">Book Title</th>
+                                    <th style="padding:0.75rem; text-align:center;">Borrowed On</th>
+                                    <th style="padding:0.75rem; text-align:center;">Due Date</th>
+                                    <th style="padding:0.75rem; text-align:center;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $recent = $conn->prepare("SELECT b.title, br.borrow_date, br.due_date, br.return_date
+                                    FROM borrow_records br
+                                    JOIN books b ON br.book_id = b.book_id
+                                    WHERE br.user_id = ?
+                                    ORDER BY br.borrow_date DESC
+                                    LIMIT 5");
+                                if ($recent) {
+                                    $recent->bind_param("i", $user_id);
+                                    $recent->execute();
+                                    $recent_result = $recent->get_result();
+                                    if ($recent_result && $recent_result->num_rows > 0) {
+                                        while ($row = $recent_result->fetch_assoc()) {
+                                            $status = $row['return_date'] ? 'Returned' : (strtotime($row['due_date']) < time() ? 'Overdue' : 'Borrowed');
+                                            $status_color = $row['return_date'] ? '#388e3c' : (strtotime($row['due_date']) < time() ? '#b71c1c' : '#C5832B');
+                                            echo "<tr>
+                                                <td style='padding:0.75rem; text-align:center;'>" . htmlspecialchars($row['title']) . "</td>
+                                                <td style='padding:0.75rem; text-align:center;'>" . htmlspecialchars(date('M d, Y', strtotime($row['borrow_date']))) . "</td>
+                                                <td style='padding:0.75rem; text-align:center;'>" . htmlspecialchars(date('M d, Y', strtotime($row['due_date']))) . "</td>
+                                                <td style='padding:0.75rem; color: $status_color; font-weight:600; text-align:center;'>" . $status . "</td>
+                                            </tr>";
+                                        }
+                                    } else {
+                                        echo "<tr><td colspan='4' style='padding:1.5rem; text-align:center; color:#888;'>No recent activity.</td></tr>";
+                                    }
+                                    $recent->close();
+                                } else {
+                                    echo "<tr><td colspan='4' style='padding:1.5rem; text-align:center; color:#b71c1c;'>Query error: " . htmlspecialchars($conn->error) . "</td></tr>";
                                 }
-                            } else {
-                                echo "<tr><td colspan='4' style='padding:1.5rem; text-align:center; color:#888;'>No recent activity.</td></tr>";
-                            }
-                            $recent->close();
-                            ?>
-                        </tbody>
-                    </table>
+                                ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

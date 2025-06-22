@@ -1,4 +1,3 @@
-
 :root {
   --primary: #2c3e50;
   --secondary: #34495e;
@@ -70,35 +69,45 @@ body {
 
 .admin-sidebar {
   width: 240px;
-  background-color: var(--secondary);
-  color: var(--white);
-  padding: 1.5rem 1rem;
+  background: #23272f;
+  color: #fff;
+  min-height: calc(100vh - 64px); /* Adjust if your header is a different height */
+  position: sticky;
+  top: 64px; /* Height of your header */
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  align-items: center;
+  padding-top: 2rem;
 }
 
 .admin-sidebar .user-info {
   text-align: center;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 2rem;
 }
 
 .admin-sidebar .user-info i {
-  font-size: 3.5rem;
-  margin-bottom: 0.75rem;
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
 }
 
-.admin-sidebar .user-info h3 {
-  margin: 0.5rem 0 0.25rem;
-  font-size: 1.2rem;
+.admin-sidebar .nav-links {
+  list-style: none;
+  padding: 0;
+  width: 100%;
 }
 
-.admin-sidebar .user-info p {
-  margin: 0;
-  font-size: 0.9rem;
-  opacity: 0.7;
+.admin-sidebar .nav-link {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.admin-sidebar .nav-link.active,
+.admin-sidebar .nav-link:hover {
+  background: #2c313a;
 }
 
 .nav-links {
@@ -130,10 +139,21 @@ body {
 }
 
 
+.admin-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Already present, ensures vertical alignment at the top */
+    background: #f5f6fa;
+    min-height: calc(100vh - 64px);
+    padding: 2rem 0;
+}
+
 .admin-main {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .admin-section {
@@ -146,6 +166,9 @@ body {
 
 .admin-section.active {
     display: block; 
+    max-width: 900px;
+    margin: 2.5rem auto 0 auto;
+    padding: 2.5rem 2.5rem 2rem 2.5rem;
 }
 
 .admin-section h2 {
@@ -187,18 +210,19 @@ tbody tr:hover {
 
 
 .button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: opacity 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  text-decoration: none;
-  color: var(--white);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.5em 1.2em;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.18s, color 0.18s;
+    background: #eee;
+    color: #222;
 }
 
 .button:hover {
@@ -206,26 +230,28 @@ tbody tr:hover {
 }
 
 .button.edit {
-  background-color: #f39c12;
+    background: #3498db;
+    color: #fff;
+}
+.button.edit:hover {
+    background: #217dbb;
 }
 
 .button.delete {
-  background-color: var(--danger);
+    background: #e74c3c;
+    color: #fff;
+}
+.button.delete:hover {
+    background: #c0392b;
 }
 
 .button.add {
-    background-color: var(--accent);
-    margin-bottom: 1.5rem;
-    font-size: 1rem;
-    padding: 0.75rem 1.5rem;
+    background: #2ecc71;
+    color: #fff;
 }
-
-.button.return {
-    background-color: var(--success);
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+.button.add:hover {
+    background: #219150;
 }
-
 
 .modal {
   display: none;
@@ -294,4 +320,269 @@ tbody tr:hover {
     text-align: center;
     padding: 2rem;
     color: #777;
+}
+
+.notification-badge {
+    background: #e74c3c;
+    color: #fff;
+    border-radius: 50%;
+    padding: 0.2em 0.6em;
+    font-size: 0.8em;
+    margin-left: 0.5em;
+}
+
+/* Container for main content */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 2.5rem auto 0 auto;
+    padding: 0 2rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 80vh;
+}
+
+/* Make wrapper and container fill the viewport */
+.admin-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background: #f5f6fa;
+    gap: 2.5rem;
+}
+@media (max-width: 1200px) {
+    .admin-wrapper {
+        gap: 1.2rem;
+    }
+}
+@media (max-width: 900px) {
+    .admin-wrapper {
+        flex-direction: column;
+        gap: 0;
+    }
+    .admin-sidebar {
+        width: 100%;
+        min-height: unset;
+        position: static;
+        border-right: none;
+        box-shadow: none;
+        border-bottom: 1px solid #e5e8ef;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 1rem 0.5rem;
+    }
+}
+
+.stats-container {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(44,62,80,0.10);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 180px;
+    max-width: 220px;
+    cursor: default; /* Ensures the pointer does not appear */
+}
+
+.stat-card .icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.7rem;
+    background: #f3f6fa;
+    border-radius: 50%;
+    padding: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.stat-card.books .icon { color: #3498db; background: #eaf4fb; }
+.stat-card.users .icon { color: #2ecc71; background: #eafbf3; }
+.stat-card.issued .icon { color: #f1c40f; background: #fdfbe7; }
+.stat-card.overdue .icon { color: #e74c3c; background: #fdeaea; }
+
+.stat-card .info h3 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+.stat-card .info p {
+    margin: 0.2rem 0 0 0;
+    color: #888;
+    font-size: 1rem;
+}
+
+/* Responsive: stack cards on small screens */
+@media (max-width: 900px) {
+    .stats-container {
+        flex-direction: column;
+        gap: 1.2rem;
+        align-items: stretch;
+    }
+    .admin-section.active {
+        padding: 1.2rem 0.5rem;
+        max-width: 98vw;
+    }
+}
+
+.welcome-message {
+    margin-bottom: 2rem;
+    font-size: 1.15rem;
+    color: #444;
+}
+
+.crud-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.alert.success {
+    background: #eafaf1;
+    color: #219150;
+    padding: 0.8em 1.2em;
+    border-radius: 6px;
+    margin-bottom: 1em;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.5em 1.2em;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.18s, color 0.18s;
+    background: #eee;
+    color: #222;
+}
+
+.button.edit {
+    background: #3498db;
+    color: #fff;
+}
+.button.edit:hover {
+    background: #217dbb;
+}
+
+.button.delete {
+    background: #e74c3c;
+    color: #fff;
+}
+.button.delete:hover {
+    background: #c0392b;
+}
+
+.button.add {
+    background: #2ecc71;
+    color: #fff;
+}
+.button.add:hover {
+    background: #219150;
+}
+
+.add-book-container {
+    max-width: 480px;
+    margin: 3rem auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 16px rgba(44,62,80,0.10);
+    padding: 2.5rem 2rem 2rem 2rem;
+}
+
+.add-book-container h2 {
+    margin-top: 0;
+    text-align: center;
+    color: var(--primary, #2d3a4a);
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
+}
+
+.add-book-container .back-link {
+    display: inline-block;
+    margin-bottom: 1.2rem;
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.18s;
+}
+.add-book-container .back-link:hover {
+    color: #217dbb;
+    text-decoration: underline;
+}
+
+.form-group {
+    margin-bottom: 1.2rem;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+    color: #333;
+}
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.7em;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    background: #f8fafc;
+    transition: border 0.18s;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #3498db;
+    outline: none;
+}
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.alert {
+    padding: 0.8em 1.2em;
+    border-radius: 6px;
+    margin-bottom: 1em;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    font-size: 1rem;
+}
+.alert-success {
+    background: #eafaf1;
+    color: #219150;
+}
+.alert-error {
+    background: #fdeaea;
+    color: #e74c3c;
+}
+
+.edit-book-container {
+    max-width: 480px;
+    margin: 3rem auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 16px rgba(44,62,80,0.10);
+    padding: 2.5rem 2rem 2rem 2rem;
 }

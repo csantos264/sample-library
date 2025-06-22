@@ -39,7 +39,7 @@ if ($result && $result->num_rows > 0) {
 </head>
 <body>
     <header class="main-header">
-        <h1>Book Stop</h1>
+        <h1><i class="fas fa-book-reader"></i><a href= welcome-page.php class="home-btn">Book Stop<a></h1>
         <nav>
             <a href="browse-books.php" class="btn">Books</a>
             <a href="index.php" class="btn">Login</a>

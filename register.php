@@ -17,21 +17,25 @@ unset($_SESSION['register_error'], $_SESSION['register_success']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register | Book Stop</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="browse-books.css">
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
    <header class="main-header">
-        <h1>Book Stop</h1>
+        <h1>
+            <i class="fas fa-book-reader"></i>
+            <a href="welcome-page.php" class="home-btn">Book Stop</a>
+        </h1>
         <nav>
             <a href="browse-books.php" class="btn">Books</a>
             <a href="index.php" class="btn">Login</a>
-            <a href="register.php" class="btn">Register</a>
+            <a href="register.php" class="btn">Sign Up</a>
         </nav>
     </header>
     <div class="container">
          <div class="form-box active" id="register">
             <form action="login_register.php" method="post">
-                <h2>Register</h2>
+                <h2>Sign Up</h2>
                 <?= showMessage('error', $register_error) ?>
                 <?= showMessage('success', $register_success) ?>
                 <div class="form-group">
@@ -45,7 +49,7 @@ unset($_SESSION['register_error'], $_SESSION['register_success']);
                 </div>
                 <input type="hidden" name="user_type" value="user">
                 <div class="form-group">
-                    <button type="submit" name="register" class="btn btn-primary">Register</button>
+                    <button type="submit" name="register" class="btn btn-primary">Sign Up</button>
                 </div>
                 <p class="form-footer">
                     Already have an account? 

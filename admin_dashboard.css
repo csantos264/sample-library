@@ -344,19 +344,16 @@ tbody tr:hover {
 }
 
 .stat-card {
-    background: #ffffff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(44,62,80,0.10);
+    padding: 2rem 1.5rem;
+    text-align: center;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    min-width: 180px;
+    max-width: 220px;
 }
 
 .stat-card .icon {
