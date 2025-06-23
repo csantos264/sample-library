@@ -4,7 +4,8 @@ session_start();
 function showMessage($type, $message) {
     if (empty($message)) return '';
     $class = $type === 'error' ? 'error-message' : 'success-message';
-    return "<div class='$class'>$message</div>";
+    $icon = $type === 'error' ? "<i class='fas fa-exclamation-circle'></i>" : "<i class='fas fa-check-circle'></i>";
+    return "<div class='$class'>$icon$message</div>";
 }
 
 $register_error = $_SESSION['register_error'] ?? '';
@@ -19,6 +20,61 @@ unset($_SESSION['register_error'], $_SESSION['register_success']);
     <title>Register | Book Stop</title>
     <link rel="stylesheet" href="browse-books.css">
      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+     <style>
+        .error-message {
+            background: #ffeaea;
+            color: #c0392b;
+            border: 1px solid #e74c3c;
+            border-radius: 6px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(231,76,60,0.07);
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: shake 0.2s 2;
+        }
+        .error-message i {
+            color: #e74c3c;
+            font-size: 1.2em;
+        }
+        .success-message {
+            background: #eafaf1;
+            color: #218c4c;
+            border: 1px solid #27ae60;
+            border-radius: 6px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(39,174,96,0.07);
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: pop 0.3s 1;
+        }
+        .success-message i {
+            color: #27ae60;
+            font-size: 1.2em;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
 </head>
 <body>
    <header class="main-header">

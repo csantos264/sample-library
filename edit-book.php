@@ -45,15 +45,45 @@ if ($book_id <= 0) {
         $category = trim($_POST['category'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $available_copies = (int)($_POST['available_copies'] ?? 0);
+        $cover_image = $book['cover_image']; // Keep old image by default
 
-        if ($title === '' || $author === '' || $isbn === '' || $category === '' || $available_copies < 0) {
+        // Handle file upload
+        if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = 'uploads/covers/';
+            // Create directory if it doesn't exist
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            
+            $file_name = basename($_FILES['cover_image']['name']);
+            $target_file = $upload_dir . $file_name;
+            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+            // Basic validation
+            $check = getimagesize($_FILES['cover_image']['tmp_name']);
+            if ($check === false) {
+                $error = "File is not an image.";
+            } elseif (!in_array($imageFileType, ['jpg', 'jpeg', 'png', 'gif'])) {
+                $error = "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
+            } else {
+                if (move_uploaded_file($_FILES['cover_image']['tmp_name'], $target_file)) {
+                    $cover_image = $file_name; // New image file name
+                } else {
+                    $error = "Sorry, there was an error uploading your file.";
+                }
+            }
+        }
+
+        if (empty($error) && ($title === '' || $author === '' || $isbn === '' || $category === '' || $available_copies < 0)) {
             $error = "Please fill in all required fields and provide a valid number of copies.";
-        } else {
-            $stmt = $conn->prepare("UPDATE books SET title=?, author=?, isbn=?, category=?, description=?, available_copies=? WHERE id=?");
+        }
+
+        if (empty($error)) {
+            $stmt = $conn->prepare("UPDATE books SET title=?, author=?, isbn=?, category=?, description=?, available_copies=?, cover_image=? WHERE book_id=?");
             if (!$stmt) {
                 $error = "Prepare failed: " . $conn->error;
             } else {
-                $stmt->bind_param("ssssssi", $title, $author, $isbn, $category, $description, $available_copies, $book_id);
+                $stmt->bind_param("sssssisi", $title, $author, $isbn, $category, $description, $available_copies, $cover_image, $book_id);
                 if ($stmt->execute()) {
                     header("Location: manage-books.php?msg=updated");
                     exit();
@@ -82,7 +112,7 @@ if ($book_id <= 0) {
     <meta charset="UTF-8">
     <title>Edit Book | Admin</title>
     <link rel="stylesheet" href="admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="edit-book-container">
@@ -94,7 +124,7 @@ if ($book_id <= 0) {
         <?php endif; ?>
 
         <?php if ($book): ?>
-        <form method="POST" autocomplete="off">
+        <form method="POST" autocomplete="off" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="title">Title<span style="color:#b71c1c;">*</span></label>
                 <input type="text" id="title" name="title" required value="<?= htmlspecialchars($book['title']) ?>">
@@ -118,6 +148,13 @@ if ($book_id <= 0) {
             <div class="form-group">
                 <label for="description">Description</label>
                 <textarea id="description" name="description"><?= htmlspecialchars($book['description']) ?></textarea>
+            </div>
+            <div class="form-group">
+                <label for="cover_image">Cover Image</label>
+                <input type="file" id="cover_image" name="cover_image">
+                <?php if (!empty($book['cover_image'])): ?>
+                    <p style="margin-top: 8px;">Current: <a href="uploads/covers/<?= htmlspecialchars($book['cover_image']) ?>" target="_blank"><?= htmlspecialchars($book['cover_image']) ?></a></p>
+                <?php endif; ?>
             </div>
             <button type="submit" class="button add"><i class="fas fa-save"></i> Save Changes</button>
         </form>

@@ -61,6 +61,14 @@ if (!empty($record['fine_paid']) && strtotime($record['due_date']) < strtotime($
             <div class="alert alert-info" style="margin:1.2rem 0;">
                 <i class="fas fa-info-circle"></i> No fine was paid for this transaction.
             </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;gap:10px;">
+                <a href="catalog.php" class="btn" style="background:#532c2e;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:bold;box-shadow:0 2px 6px rgba(44,62,80,0.08);display:inline-block;transition:background 0.2s;min-width:160px;text-align:center;">
+                    <i class="fas fa-book"></i> Browse Books
+                </a>
+                <a href="student_page.php" class="btn" style="background:#a66e4a;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:bold;box-shadow:0 2px 6px rgba(44,62,80,0.08);display:inline-block;transition:background 0.2s;min-width:160px;text-align:center;">
+                    <i class="fas fa-tachometer-alt"></i> Student Dashboard
+                </a>
+            </div>
         <?php endif; ?>
     </div>
 </body>

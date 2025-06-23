@@ -35,6 +35,8 @@ if ($pending_result && $row = $pending_result->fetch_assoc()) {
 $borrow_records = $conn->query("
     SELECT 
         br.borrow_id, 
+        br.book_id,
+        br.user_id,
         b.title, 
         u.full_name, 
         br.borrow_date, 
@@ -52,7 +54,7 @@ $borrow_records = $conn->query("
 <head>
     <meta charset="UTF-8">
     <title>Manage Borrowings | Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -72,10 +74,16 @@ $borrow_records = $conn->query("
                 <li><a href="manage-books.php" class="nav-link"><i class="fas fa-book"></i> Manage Books</a></li>
                 <li><a href="manage-users.php" class="nav-link"><i class="fas fa-users"></i> Users</a></li>
                 <li><a href="manage-borrow.php" class="nav-link active"><i class="fas fa-history"></i> Borrowings</a></li>
-                    <?php if($pending_requests_count > 0): ?>
-                        <span class="notification-badge"><?= $pending_requests_count ?></span>
-                    <?php endif; ?>
-                </a></li>
+                <li>
+                    <a href="extension-requests.php" class="nav-link">
+                        <i class="fas fa-hourglass-half"></i> Extension Requests
+                        <?php if ($pending_requests_count > 0): ?>
+                            <span style="background:#e74c3c;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.9em;margin-left:8px;">
+                                <?php echo $pending_requests_count; ?>
+                            </span>
+                        <?php endif; ?>
+                    </a>
+                </li>
             </ul>
         </aside>
         <div class="admin-container">
@@ -96,10 +104,10 @@ $borrow_records = $conn->query("
                         <?php if ($borrow_records && $borrow_records->num_rows > 0): ?>
                             <?php while ($row = $borrow_records->fetch_assoc()): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($row['title']) ?></td>
-                                    <td><?= htmlspecialchars($row['full_name']) ?></td>
-                                    <td><?= htmlspecialchars($row['borrow_date']) ?></td>
-                                    <td><?= htmlspecialchars($row['return_date']) ?></td>
+                                    <td><?= htmlspecialchars($row['title'] ?? '') ?></td>
+                                    <td><?= htmlspecialchars($row['full_name'] ?? '') ?></td>
+                                    <td><?= htmlspecialchars($row['borrow_date'] ?? '') ?></td>
+                                    <td><?= htmlspecialchars($row['return_date'] ?? '') ?></td>
                                     <td>
                                        <?php
                                             $today = new DateTime();
@@ -107,12 +115,26 @@ $borrow_records = $conn->query("
                                             $due = new DateTime($row['due_date']);
                                             if ($returned) {
                                                 echo '<span style="color: #2ecc71;">Returned</span>';
-                                            } elseif ($today > $due) {
-                                                echo '<span style="color: #e67e22;">Overdue</span>';
                                             } else {
-                                                echo '<span style="color: #e74c3c;">Borrowed</span>';
+                                                // Check for approved extension with new_return_date in the future
+                                                $ext_stmt = $conn->prepare("SELECT new_return_date FROM extension_requests WHERE book_id = ? AND user_id = ? AND status = 'approved' ORDER BY new_return_date DESC LIMIT 1");
+                                                $ext_stmt->bind_param("ii", $row['book_id'], $row['user_id']);
+                                                $ext_stmt->execute();
+                                                $ext_stmt->bind_result($new_return_date);
+                                                $has_extension = false;
+                                                if ($ext_stmt->fetch() && $new_return_date && (new DateTime($new_return_date)) > $today) {
+                                                    $has_extension = true;
+                                                }
+                                                $ext_stmt->close();
+                                                if ($has_extension) {
+                                                    echo '<span style="color: #2980b9;">Extended</span>';
+                                                } elseif ($today > $due) {
+                                                    echo '<span style="color: #e67e22;">Overdue</span>';
+                                                } else {
+                                                    echo '<span style="color: #e74c3c;">Borrowed</span>';
+                                                }
                                             }
-                                            ?>
+                                        ?>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>

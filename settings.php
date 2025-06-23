@@ -81,42 +81,32 @@ if (isset($_POST['change_password'])) {
     <title>Settings | Book Stop</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        
-    </style>
 </head>
-<body>
+<body class="dashboard">
+    <header class="dashboard-header">
+        <h1><i class="fas fa-book-reader"></i> Book Stop</h1>
+        <a href="login_register.php?logout=1" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </header>
     <div class="dashboard-layout">
-        <!-- Sidebar Start -->
         <div class="dashboard-sidebar">
             <div class="user-info">
                 <i class="fas fa-user-circle"></i>
-                <h3>
-                    <?php if (isset($user['full_name'])): ?>
-                        <?= htmlspecialchars($user['full_name']) ?>
-                    <?php else: ?>
-                        Student
-                    <?php endif; ?>
-                </h3>
+                <h3><?= htmlspecialchars($user['full_name'] ?? 'Student') ?></h3>
                 <p>Student</p>
             </div>
             <nav>
                 <ul class="sidebar-menu">
-                    <li><a href="student_page.php"><i class="fas fa-tachometer-alt" style="margin-right:8px;"></i>Dashboard</a></li>
-                    <li><a href="settings.php" class="active"><i class="fas fa-cog" style="margin-right:8px;"></i>Settings</a></li>
-                    <li><a href="my-profile.php"><i class="fas fa-user" style="margin-right:8px;"></i>My Profile</a></li>
-                    <li><a href="borrow-book.php"><i class="fas fa-book-reader" style="margin-right:8px;"></i>Borrow Book</a></li>
-                    <li><a href="login_register.php?logout=1" style="color:#a66e4a;"><i class="fas fa-sign-out-alt" style="margin-right:8px;"></i>Logout</a></li>
+                    <li><a href="student_page.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'student_page.php' ? ' active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="my-profile.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-profile.php' ? ' active' : '' ?>"><i class="fas fa-user"></i> My Profile</a></li>
+                    <li><a href="catalog.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'catalog.php' ? ' active' : '' ?>"><i class="fas fa-book"></i> Browse Books</a></li>
+                    <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrow Book</a></li>
+                    <li><a href="settings.php" class="nav-link active"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
         </div>
-        <!-- Sidebar End -->
-
-        <!-- Main Content Start -->
-        <div style="flex:1;">
-            <div class="settings-header">
-               <h2> Book Stop </h2>
-            </div>
+        <div class="dashboard-main">
             <div class="settings-container">
                 <div class="settings-card">
                     <h3><i class="fas fa-user"></i> Profile Information</h3>
@@ -157,7 +147,6 @@ if (isset($_POST['change_password'])) {
                 </div>
             </div>
         </div>
-        <!-- Main Content End -->
     </div>
 </body>
 </html>

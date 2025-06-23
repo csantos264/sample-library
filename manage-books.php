@@ -50,7 +50,7 @@ if (isset($_GET['msg'])) {
 <head>
     <meta charset="UTF-8">
     <title>Manage Books | Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -70,6 +70,16 @@ if (isset($_GET['msg'])) {
                 <li><a href="manage-books.php" class="nav-link active"><i class="fas fa-book"></i> Manage Books</a></li>
                 <li><a href="manage-users.php" class="nav-link"><i class="fas fa-users"></i> Users</a></li>
                 <li><a href="manage-borrow.php" class="nav-link"><i class="fas fa-history"></i> Borrowings</a></li>
+                <li>
+                    <a href="extension-requests.php" class="nav-link">
+                        <i class="fas fa-hourglass-half"></i> Extension Requests
+                        <?php if ($pending_requests_count > 0): ?>
+                            <span style="background:#e74c3c;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.9em;margin-left:8px;">
+                                <?php echo $pending_requests_count; ?>
+                            </span>
+                        <?php endif; ?>
+                    </a>
+                </li>
             </ul>
         </aside>
         <div class="admin-container">

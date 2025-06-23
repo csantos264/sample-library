@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_type'] ?? '') !== 'admin') 
     exit();
 }
 
-// Fetch admin name
+
 $admin_name = 'Admin';
 if (isset($_SESSION['user_id'])) {
     $stmt = $conn->prepare("SELECT full_name FROM users WHERE user_id = ?");
@@ -20,7 +20,7 @@ if (isset($_SESSION['user_id'])) {
     $stmt->close();
 }
 
-// Fetch stats for dashboard
+
 $total_books = 0;
 $total_users = 0;
 $issued_books = 0;
@@ -32,14 +32,15 @@ if ($result = $conn->query("SELECT COUNT(*) as count FROM books")) {
 if ($result = $conn->query("SELECT COUNT(*) as count FROM users WHERE user_type != 'admin'")) {
     $total_users = (int)$result->fetch_assoc()['count'];
 }
-if ($result = $conn->query("SELECT COUNT(*) as count FROM borrow_records WHERE returned = 0")) {
+if ($result = $conn->query("SELECT COUNT(*) as count FROM borrow_records WHERE return_date IS NULL")) {
     $issued_books = (int)$result->fetch_assoc()['count'];
 }
-if ($result = $conn->query("SELECT COUNT(*) as count FROM borrow_records WHERE returned = 0 AND return_date < CURDATE()")) {
+// Only count as overdue if there is no approved extension with a new due date in the future
+if ($result = $conn->query("SELECT COUNT(*) as count FROM borrow_records br WHERE br.return_date IS NULL AND br.due_date < CURDATE() AND NOT EXISTS (SELECT 1 FROM extension_requests er WHERE er.book_id = br.book_id AND er.user_id = br.user_id AND er.status = 'approved' AND er.new_return_date > CURDATE())")) {
     $overdue_books = (int)$result->fetch_assoc()['count'];
 }
 
-// For notification badge
+
 $pending_requests_count = 0;
 $pending_result = $conn->query("SELECT COUNT(*) as count FROM extension_requests WHERE status = 'pending'");
 if ($pending_result && $row = $pending_result->fetch_assoc()) {
@@ -56,9 +57,16 @@ if ($pending_result && $row = $pending_result->fetch_assoc()) {
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <!-- HEADER ALWAYS ON TOP -->
+    
     <header class="admin-header">
-        <h1><i class="fas fa-user-shield"></i> Admin Dashboard</h1>
+        <h1><i class="fas fa-user-shield"></i> Admin Dashboard
+            <span style="font-size:1rem; margin-left:15px;">
+                <i class="fas fa-clock"></i> Extension Requests: 
+                <span style="background:#e74c3c;color:#fff;padding:2px 8px;border-radius:12px;font-weight:bold;">
+                    <?php echo $pending_requests_count; ?>
+                </span>
+            </span>
+        </h1>
         <a href="login_register.php?logout=1" class="logout-btn" aria-label="Logout">
             <i class="fas fa-sign-out-alt"></i> Logout
         </a>
@@ -73,9 +81,20 @@ if ($pending_result && $row = $pending_result->fetch_assoc()) {
             </div>
             <ul class="nav-links">
                 <li><a href="#" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="manage-books.php" class="nav-link"><i class="fas fa-book"></i>Manage Books</a></li>
+                <li><a href="manage-books.php" class="nav-link"><i class="fas fa-book"></i> Manage Books</a></li>
                 <li><a href="manage-users.php" class="nav-link"><i class="fas fa-users"></i> Users</a></li>
                 <li><a href="manage-borrow.php" class="nav-link"><i class="fas fa-history"></i> Borrowings</a></li>
+                <li>
+                    <a href="extension-requests.php" class="nav-link">
+                        <i class="fas fa-hourglass-half"></i> Extension Requests
+                        <?php if ($pending_requests_count > 0): ?>
+                            <span style="background:#e74c3c;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.9em;margin-left:8px;">
+                                <?php echo $pending_requests_count; ?>
+                            </span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+            </ul>
         </aside>
 
         <div class="admin-container">

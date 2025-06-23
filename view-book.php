@@ -94,7 +94,7 @@ if (!$book) {
                             <?= nl2br(htmlspecialchars($book['description'])) ?>
                         </div>
                         <?php if (isset($_SESSION['user_id']) && $book['available_copies'] > 0): ?>
-                            <a href="borrow-book.php?id=<?= urlencode($book['book_id']) ?>" class="borrow-btn" style="margin-top:1rem;max-width:200px;">
+                            <a href="borrow-book.php?id=<?= urlencode($book['book_id']) ?>" class="borrow-btn" style="margin-top: 1rem; width: 100%; max-width: 250px; box-sizing: border-box;">
                                 <i class="fas fa-book-reader"></i> Borrow
                             </a>
                         <?php elseif ($book['available_copies'] < 1): ?>

@@ -122,13 +122,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book_id'])) {
                                     <?php
                                         // Prefer relative path for uploads (e.g., uploads/covers/filename.jpg)
                                         $coverPath = !empty($book['cover_image']) ? $book['cover_image'] : '';
-                                        // If not an absolute URL, prepend uploads/ if not already present
+                                        // If not an absolute URL, prepend uploads/if not already present
                                         if ($coverPath && !preg_match('/^https?:\/\//', $coverPath) && strpos($coverPath, 'uploads/') !== 0) {
                                             $coverPath = 'uploads/covers/' . $coverPath;
                                         }
                                     ?>
                                     <?php if (!empty($coverPath)): ?>
-                                        <img src="<?= htmlspecialchars($coverPath) ?>" alt="Book Cover" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">
+                                        <img src="<?= htmlspecialchars($coverPath) ?>" alt="Book Cover">
                                     <?php else: ?>
                                         <i class="fas fa-book"></i>
                                     <?php endif; ?>
@@ -147,9 +147,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book_id'])) {
                                                 }
                                             ?>
                                         </span>
+                                        <span><i class="fas fa-layer-group"></i> Available: <b><?= (int)$book['available_copies'] ?></b></span>
                                     </div>
-                                    <div class="book-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                                        <form method="post" style="display:inline;">
+                                    <div class="book-actions">
+                                        <form method="post">
                                             <input type="hidden" name="borrow_book_id" value="<?= $book['book_id'] ?>">
                                             <button type="submit" class="borrow-btn">Borrow</button>
                                         </form>

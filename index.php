@@ -7,7 +7,7 @@ if (isset($_SESSION['user_id'])) {
         header('Location: admin_page.php');
         exit();
     } else {
-        header('Location: browse-books.php');
+        header('Location: student_page.php'); 
         exit();
     }
 }
@@ -24,7 +24,8 @@ function getUnsetSessionVars($keys) {
 function showMessage($type, $message) {
     if (empty($message)) return '';
     $class = $type === 'error' ? 'error-message' : 'success-message';
-    return "<div class='$class'>$message</div>";
+    $icon = $type === 'error' ? "<i class='fas fa-exclamation-circle'></i>" : "<i class='fas fa-check-circle'></i>";
+    return "<div class='$class'>$icon$message</div>";
 }
 
 $messages = [
@@ -43,8 +44,38 @@ getUnsetSessionVars(['login_error', 'register_error', 'register_success', 'activ
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Stop</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="browse-books.css">
+    <style>
+        .error-message {
+            background: #ffeaea;
+            color: #c0392b;
+            border: 1px solid #e74c3c;
+            border-radius: 6px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(231,76,60,0.07);
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: shake 0.2s 2;
+        }
+        .error-message i {
+            color: #e74c3c;
+            font-size: 1.2em;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
 </head>
 <body>
    <header class="main-header">
@@ -54,7 +85,7 @@ getUnsetSessionVars(['login_error', 'register_error', 'register_success', 'activ
         </h1>
         <nav>
             <a href="browse-books.php" class="btn">Books</a>
-            <a href="index.php" class="btn">Login</a>
+            <a href="index.php" class="btn" class="active">Login</a>
             <a href="register.php" class="btn">Sign Up</a>
         </nav>
     </header>

@@ -60,6 +60,40 @@ if ($book_id <= 0) {
         }
     }
 }
+
+// Handle extension request submission
+if (isset($_POST['request_extension']) && isset($_POST['borrow_id'])) {
+    $borrow_id = (int)$_POST['borrow_id'];
+    // Get borrow record info
+    $stmt = $conn->prepare("SELECT * FROM borrow_records WHERE borrow_id = ? AND user_id = ?");
+    $stmt->bind_param("ii", $borrow_id, $user_id);
+    $stmt->execute();
+    $borrow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($borrow && empty($borrow['return_date'])) {
+        // Check if already requested
+        $stmt = $conn->prepare("SELECT * FROM extension_requests WHERE user_id = ? AND book_id = ? AND status = 'pending'");
+        $stmt->bind_param("ii", $user_id, $borrow['book_id']);
+        $stmt->execute();
+        $already_requested = $stmt->get_result()->num_rows > 0;
+        $stmt->close();
+        if ($already_requested) {
+            $error = "You already have a pending extension request for this book.";
+        } else {
+            $new_return_date = date('Y-m-d', strtotime($borrow['due_date'] . ' +7 days'));
+            $stmt = $conn->prepare("INSERT INTO extension_requests (book_id, user_id, request_date, new_return_date, status) VALUES (?, ?, NOW(), ?, 'pending')");
+            $stmt->bind_param("iis", $borrow['book_id'], $user_id, $new_return_date);
+            if ($stmt->execute()) {
+                $success = "Extension request submitted!";
+            } else {
+                $error = "Failed to submit extension request.";
+            }
+            $stmt->close();
+        }
+    } else {
+        $error = "Invalid borrow record or already returned.";
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -67,7 +101,7 @@ if ($book_id <= 0) {
     <meta charset="UTF-8">
     <title>Borrow Book | Book Stop</title>
     <link rel="stylesheet" href="style.css">
-     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <header class="dashboard-header">
@@ -167,6 +201,23 @@ if ($book_id <= 0) {
                                 echo "<br><a href='payment.php?borrow_id=" . $row['borrow_id'] . "' class='btn' style='margin-top:0.5rem;display:inline-block;padding:0.3rem 0.8rem;font-size:0.95rem;background:#b71c1c;color:#fff;border-radius:6px;text-decoration:none;'>
                                         <i class='fas fa-money-bill-wave'></i> Pay Fine
                                     </a>";
+                            }
+                            // Extension Request button
+                            // Check if already requested
+                            $ext_stmt = $conn->prepare("SELECT * FROM extension_requests WHERE user_id = ? AND book_id = ? AND status = 'pending'");
+                            $ext_stmt->bind_param("ii", $user_id, $row['borrow_id']);
+                            $ext_stmt->execute();
+                            $already_requested = $ext_stmt->get_result()->num_rows > 0;
+                            $ext_stmt->close();
+                            if ($already_requested) {
+                                echo "<br><span style='display:inline-block;margin-top:0.5rem;padding:0.3rem 0.8rem;font-size:0.95rem;background:#f5e9e0;color:#b71c1c;border-radius:6px;'>
+                                        <i class='fas fa-hourglass-half'></i> Extension Requested
+                                    </span>";
+                            } else {
+                                echo "<br><form method='post' style='display:inline;margin-top:0.5rem;'>
+                                        <input type='hidden' name='borrow_id' value='" . $row['borrow_id'] . "'>
+                                        <button type='submit' name='request_extension' class='btn' style='background:#C5832B;color:#fff;padding:0.3rem 0.8rem;font-size:0.95rem;border-radius:6px;margin-top:0.5rem;'><i class='fas fa-hourglass-half'></i> Request Extension</button>
+                                    </form>";
                             }
                             echo "</td>";
                         } else {

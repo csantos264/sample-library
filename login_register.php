@@ -19,7 +19,8 @@ if (isset($_POST['login'])) {
     $result = $stmt->get_result();
     if ($result && $result->num_rows === 1) {
         $user = $result->fetch_assoc();
-        if (password_verify($password, $user['password'])) {
+        // Allow login with either hashed or plain text password (for legacy/manual users)
+        if (password_verify($password, $user['password']) || $password === $user['password']) {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['email'] = $user['email'];
@@ -29,7 +30,7 @@ if (isset($_POST['login'])) {
             if ($user['user_type'] === 'admin') {
                 header("Location: admin_page.php");
             } else {
-                header("Location: browse-books.php");
+                header("Location: student_page.php");
             }
             exit();
         }
