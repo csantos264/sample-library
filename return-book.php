@@ -37,15 +37,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_id'])) {
             header("Location: payment.php?borrow_id=$borrow_id&amount=$fine");
             exit;
         } else {
-            // Process return as usual, update status to 'returned'
-            $return_date = date('Y-m-d');
-            $stmt = $conn->prepare("UPDATE borrow_records SET return_date = ?, status = 'returned' WHERE borrow_id = ?");
-            $stmt->bind_param("si", $return_date, $borrow_id);
-            $stmt->execute();
-            $stmt->close();
-            // Redirect to receipt or borrowed books page
-            header("Location: receipt.php?borrow_id=$borrow_id");
-            exit;
+            // Process return: update borrow record and increment book count
+            $conn->begin_transaction();
+            try {
+                // 1. Update borrow record status to 'returned'
+                $return_date = date('Y-m-d');
+                $stmt1 = $conn->prepare("UPDATE borrow_records SET return_date = ?, status = 'returned' WHERE borrow_id = ?");
+                $stmt1->bind_param("si", $return_date, $borrow_id);
+                $stmt1->execute();
+                $stmt1->close();
+
+                // 2. Increment the available copies count for the book
+                $book_id = $record['book_id'];
+                $stmt2 = $conn->prepare("UPDATE books SET available_copies = available_copies + 1 WHERE book_id = ?");
+                $stmt2->bind_param("i", $book_id);
+                $stmt2->execute();
+                $stmt2->close();
+
+                // Commit the transaction
+                $conn->commit();
+
+                // Redirect to receipt page on success
+                header("Location: receipt.php?borrow_id=$borrow_id");
+                exit;
+
+            } catch (Exception $e) {
+                // Rollback transaction on error
+                $conn->rollback();
+                $_SESSION['error_msg'] = "There was an error processing your return. Please try again.";
+                // Redirect to borrowed books page, where the error can be displayed
+                header("Location: borrow-book.php");
+                exit;
+            }
         }
     }
 }

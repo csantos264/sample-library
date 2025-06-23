@@ -28,6 +28,13 @@ if ($pending_result && $row = $pending_result->fetch_assoc()) {
     $pending_requests_count = (int)$row['count'];
 }
 
+// Fetch pending reservation count
+$pending_reservations_count = 0;
+$pending_reservations_result = $conn->query("SELECT COUNT(*) as count FROM reservations WHERE status = 'pending'");
+if ($pending_reservations_result && $row = $pending_reservations_result->fetch_assoc()) {
+    $pending_reservations_count = (int)$row['count'];
+}
+
 // Fetch books
 $books = [];
 $result = $conn->query("SELECT * FROM books ORDER BY title ASC");
@@ -75,7 +82,17 @@ if (isset($_GET['msg'])) {
                         <i class="fas fa-hourglass-half"></i> Extension Requests
                         <?php if ($pending_requests_count > 0): ?>
                             <span style="background:#e74c3c;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.9em;margin-left:8px;">
-                                <?php echo $pending_requests_count; ?>
+                                <?= $pending_requests_count ?>
+                            </span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+                <li>
+                    <a href="reservation-requests.php" class="nav-link">
+                        <i class="fas fa-calendar-check"></i> Reservation Requests
+                        <?php if ($pending_reservations_count > 0): ?>
+                            <span style="background:#3498db;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.9em;margin-left:8px;">
+                                <?= $pending_reservations_count ?>
                             </span>
                         <?php endif; ?>
                     </a>

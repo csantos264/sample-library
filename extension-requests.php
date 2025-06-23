@@ -94,7 +94,7 @@ $result = $conn->query($query);
                                     </td>
                                     <td>
                                         <?php if ($row['status'] === 'pending'): ?>
-                                            <form action="process-extension.php" method="post" style="display:inline;">
+                                            <form action="process-extension.php" method="post" style="display: flex; gap: 5px; align-items: center;">
                                                 <input type="hidden" name="request_id" value="<?= $row['request_id'] ?>">
                                                 <button type="submit" name="action" value="approve" class="button approve">Approve</button>
                                                 <button type="submit" name="action" value="deny" class="button delete">Deny</button>

@@ -4,18 +4,54 @@
 session_start();
 require_once 'config.php';
 
-// Fetch all books
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php');
+    exit();
+}
+
+$user_id = (int)$_SESSION['user_id'];
+$user = null;
+
+// Fetch user info
+$stmt = $conn->prepare("SELECT full_name, email, user_type FROM users WHERE user_id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+$stmt->close();
+
+if (!$user) {
+    echo "User not found.";
+    exit();
+}
+
+// Fetch all books and their pending reservation counts
 $books = [];
-$result = $conn->query("SELECT * FROM books ORDER BY title ASC");
+$query = "
+    SELECT b.*, (SELECT COUNT(*) FROM reservations WHERE book_id = b.book_id AND status = 'pending') as pending_reservations
+    FROM books b
+    ORDER BY b.title ASC
+";
+$result = $conn->query($query);
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $books[] = $row;
     }
 }
 
-// Handle borrow action
+// Process flash messages from session
 $success = '';
 $error = '';
+if (isset($_SESSION['success_msg'])) {
+    $success = $_SESSION['success_msg'];
+    unset($_SESSION['success_msg']);
+}
+if (isset($_SESSION['error_msg'])) {
+    $error = $_SESSION['error_msg'];
+    unset($_SESSION['error_msg']);
+}
+
+// Handle borrow action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book_id'])) {
     if (!isset($_SESSION['user_id'])) {
         $error = "Please login first before borrowing a book!";
@@ -67,6 +103,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book_id'])) {
         }
     }
 }
+
+// Handle reserve action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reserve_book_id'])) {
+    if (!isset($_SESSION['user_id'])) {
+        $error = "Please login first before reserving a book!";
+    } else {
+        $user_id = (int)$_SESSION['user_id'];
+        $book_id = (int)$_POST['reserve_book_id'];
+
+        // Check if book exists and is unavailable
+        $stmt = $conn->prepare("SELECT title, available_copies FROM books WHERE book_id = ?");
+        $stmt->bind_param("i", $book_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $book = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$book) {
+            $_SESSION['error_msg'] = "Book not found.";
+            header('Location: catalog.php');
+            exit();
+        } elseif ($book['available_copies'] > 0) {
+            $_SESSION['error_msg'] = "This book is currently available to borrow.";
+            header('Location: catalog.php');
+            exit();
+        } else {
+            // 1. Check for an existing PENDING reservation (robust check)
+            $stmt = $conn->prepare("SELECT COUNT(reservation_id) FROM reservations WHERE user_id = ? AND book_id = ? AND (status = 'pending' OR status IS NULL OR TRIM(status) = '')");
+            $stmt->bind_param("ii", $user_id, $book_id);
+            $stmt->execute();
+            $stmt->bind_result($reservation_count);
+            $stmt->fetch();
+            $stmt->close();
+
+            if ($reservation_count > 0) {
+                $_SESSION['error_msg'] = "You can only reserve once.";
+                header('Location: catalog.php');
+                exit();
+            } else {
+                // 2. Insert new reservation with 'pending' status
+                $reservation_date = date('Y-m-d H:i:s');
+                $status = 'pending';
+                $stmt = $conn->prepare("INSERT INTO reservations (user_id, book_id, reservation_date, status) VALUES (?, ?, ?, ?)");
+                $stmt->bind_param("iiss", $user_id, $book_id, $reservation_date, $status);
+                if ($stmt->execute()) {
+                    $_SESSION['success_msg'] = "You have successfully reserved the book.";
+                } else {
+                    $_SESSION['error_msg'] = "Failed to reserve book. Error: " . $stmt->error;
+                }
+                $stmt->close();
+                header('Location: catalog.php');
+                exit();
+            }
+        }
+        }
+    }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -75,6 +168,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book_id'])) {
     <title>Book Catalog | Book Stop</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .reserve-btn {
+            background-color: #8c6b6b; /* A muted brown for reserve */
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .reserve-btn:hover {
+            background-color: #735555;
+        }
+        .book-actions form {
+            margin: 0;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
     <header class="dashboard-header">
@@ -87,19 +200,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book_id'])) {
         <div class="dashboard-sidebar">
             <div class="user-info">
                 <i class="fas fa-user-circle"></i>
-                <h3>
-                    <?= htmlspecialchars($user['full_name'] ?? 'Student') ?>
-                </h3>
-                <p>
-                    <?= htmlspecialchars($user['user_type'] ?? 'Student') ?>
-                </p>
+                <h3><?= htmlspecialchars($user['full_name'] ?? 'User') ?></h3>
+                <p><?= htmlspecialchars($user['user_type'] ?? 'User') ?></p>
             </div>
             <nav>
                 <ul class="sidebar-menu">
                     <li><a href="student_page.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'student_page.php' ? ' active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                     <li><a href="my-profile.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-profile.php' ? ' active' : '' ?>"><i class="fas fa-user"></i> My Profile</a></li>
                     <li><a href="catalog.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'catalog.php' ? ' active' : '' ?>"><i class="fas fa-book"></i> Browse Books</a></li>
-                    <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrow Book</a></li>
+                                        <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrow Book</a></li>
+                    <li><a href="my-reservation.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-reservation.php' ? ' active' : '' ?>"><i class="fas fa-calendar-check"></i> My Reservations</a></li>
                     <li><a href="settings.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'settings.php' ? ' active' : '' ?>"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
@@ -148,12 +258,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book_id'])) {
                                             ?>
                                         </span>
                                         <span><i class="fas fa-layer-group"></i> Available: <b><?= (int)$book['available_copies'] ?></b></span>
+                                        <?php if ((int)$book['available_copies'] == 0 && (int)$book['pending_reservations'] > 0): ?>
+                                            <span><i class="fas fa-clock"></i> Reserved: <b><?= (int)$book['pending_reservations'] ?></b></span>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="book-actions">
-                                        <form method="post">
-                                            <input type="hidden" name="borrow_book_id" value="<?= $book['book_id'] ?>">
-                                            <button type="submit" class="borrow-btn">Borrow</button>
-                                        </form>
+                                        <?php if ((int)$book['available_copies'] > 0): ?>
+                                            <form method="post">
+                                                <input type="hidden" name="borrow_book_id" value="<?= $book['book_id'] ?>">
+                                                <button type="submit" class="borrow-btn">Borrow</button>
+                                            </form>
+                                        <?php else: ?>
+                                            <form method="post" action="catalog.php" class="reserve-form" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+                                             <input type="hidden" name="reserve_book_id" value="<?= (int)$book['book_id'] ?>">
+                                             <button type="submit" class="reserve-btn"><i class="fas fa-calendar-plus"></i> Reserve</button>
+                                         </form>
+                                        <?php endif; ?>
                                         <a href="view-book.php?id=<?= urlencode($book['book_id']) ?>" class="view-btn">View</a>
                                     </div>
                                 </div>

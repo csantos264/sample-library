@@ -66,7 +66,7 @@ if (!empty($record['fine_paid']) && strtotime($record['due_date']) < strtotime($
                     <i class="fas fa-book"></i> Browse Books
                 </a>
                 <a href="student_page.php" class="btn" style="background:#a66e4a;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:bold;box-shadow:0 2px 6px rgba(44,62,80,0.08);display:inline-block;transition:background 0.2s;min-width:160px;text-align:center;">
-                    <i class="fas fa-tachometer-alt"></i> Student Dashboard
+                    <i class="fas fa-tachometer-alt"></i> User Dashboard
                 </a>
             </div>
         <?php endif; ?>

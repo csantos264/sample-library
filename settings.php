@@ -12,7 +12,7 @@ $success = '';
 $error = '';
 
 // Fetch user info
-$stmt = $conn->prepare("SELECT full_name, email FROM users WHERE user_id = ?");
+$stmt = $conn->prepare("SELECT full_name, email, user_type FROM users WHERE user_id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -93,8 +93,8 @@ if (isset($_POST['change_password'])) {
         <div class="dashboard-sidebar">
             <div class="user-info">
                 <i class="fas fa-user-circle"></i>
-                <h3><?= htmlspecialchars($user['full_name'] ?? 'Student') ?></h3>
-                <p>Student</p>
+                <h3><?= htmlspecialchars($user['full_name'] ?? 'User') ?></h3>
+                <p><?= htmlspecialchars($user['user_type'] ?? 'User') ?></p>
             </div>
             <nav>
                 <ul class="sidebar-menu">
@@ -102,6 +102,7 @@ if (isset($_POST['change_password'])) {
                     <li><a href="my-profile.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-profile.php' ? ' active' : '' ?>"><i class="fas fa-user"></i> My Profile</a></li>
                     <li><a href="catalog.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'catalog.php' ? ' active' : '' ?>"><i class="fas fa-book"></i> Browse Books</a></li>
                     <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrow Book</a></li>
+                    <li><a href="my-reservation.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-reservation.php' ? ' active' : '' ?>"><i class="fas fa-calendar-check"></i> My Reservations</a></li>
                     <li><a href="settings.php" class="nav-link active"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
