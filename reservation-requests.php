@@ -109,8 +109,18 @@ $result = $conn->query($query);
                                     <td>
                                         <form action="process-reservation.php" method="post" style="display: flex; gap: 5px; align-items: center;">
                                             <input type="hidden" name="reservation_id" value="<?= $row['reservation_id'] ?>">
-                                            <button type="submit" name="action" value="approved" class="button approve" <?= ($row['available_copies'] < 1) ? 'disabled' : '' ?> title="<?= ($row['available_copies'] < 1) ? 'Cannot approve, no copies available' : 'Approve reservation' ?>">Approve</button>
-                                            <button type="submit" name="action" value="denied" class="button delete">Deny</button>
+                                            <button type="submit" name="action" value="approved"
+                                                class="button approve"
+                                                <?= ($row['available_copies'] < 1) ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '' ?>
+                                                title="<?= ($row['available_copies'] < 1) ? 'Cannot approve, no copies available' : 'Approve reservation' ?>">
+                                                Approve
+                                            </button>
+                                            <button type="submit" name="action" value="denied"
+                                                class="button delete"
+                                                onclick="return confirm('Are you sure you want to deny this reservation?');"
+                                                title="Deny reservation">
+                                                Deny
+                                            </button>
                                         </form>
                                     </td>
                                 </tr>

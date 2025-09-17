@@ -19,6 +19,53 @@ if (!$book) {
     echo "Book not found.";
     exit();
 }
+
+// Reservation logic
+$reserve_success = '';
+$reserve_error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reserve_book_id'])) {
+    if (!isset($_SESSION['user_id'])) {
+        $reserve_error = "Please login first before reserving a book!";
+    } else {
+        $user_id = (int)$_SESSION['user_id'];
+        $book_id = (int)$_POST['reserve_book_id'];
+        // Check if book exists and is unavailable
+        $stmt = $conn->prepare("SELECT title, available_copies FROM books WHERE book_id = ?");
+        $stmt->bind_param("i", $book_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $book_check = $result->fetch_assoc();
+        $stmt->close();
+        if (!$book_check) {
+            $reserve_error = "Book not found.";
+        } elseif ($book_check['available_copies'] > 0) {
+            $reserve_error = "This book is currently available to borrow.";
+        } else {
+            // Check for an existing PENDING reservation
+            $stmt = $conn->prepare("SELECT COUNT(reservation_id) FROM reservations WHERE user_id = ? AND book_id = ? AND (status = 'pending' OR status IS NULL OR TRIM(status) = '')");
+            $stmt->bind_param("ii", $user_id, $book_id);
+            $stmt->execute();
+            $stmt->bind_result($reservation_count);
+            $stmt->fetch();
+            $stmt->close();
+            if ($reservation_count > 0) {
+                $reserve_error = "You already have a pending reservation for this book.";
+            } else {
+                // Insert new reservation
+                $reservation_date = date('Y-m-d H:i:s');
+                $status = 'pending';
+                $stmt = $conn->prepare("INSERT INTO reservations (user_id, book_id, reservation_date, status) VALUES (?, ?, ?, ?)");
+                $stmt->bind_param("iiss", $user_id, $book_id, $reservation_date, $status);
+                if ($stmt->execute()) {
+                    $reserve_success = "You have successfully reserved the book.";
+                } else {
+                    $reserve_error = "Failed to reserve book. Error: " . $stmt->error;
+                }
+                $stmt->close();
+            }
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -93,12 +140,25 @@ if (!$book) {
                             <strong>Description:</strong><br>
                             <?= nl2br(htmlspecialchars($book['description'])) ?>
                         </div>
+                        <?php if ($reserve_success): ?>
+                            <div class="alert alert-success" style="margin-top:1rem;"> <?= htmlspecialchars($reserve_success) ?> </div>
+                        <?php elseif ($reserve_error): ?>
+                            <div class="alert alert-error" style="margin-top:1rem;"> <?= htmlspecialchars($reserve_error) ?> </div>
+                        <?php endif; ?>
                         <?php if (isset($_SESSION['user_id']) && $book['available_copies'] > 0): ?>
                             <a href="borrow-book.php?id=<?= urlencode($book['book_id']) ?>" class="borrow-btn" style="margin-top: 1rem; width: 100%; max-width: 250px; box-sizing: border-box;">
                                 <i class="fas fa-book-reader"></i> Borrow
                             </a>
                         <?php elseif ($book['available_copies'] < 1): ?>
                             <div class="alert alert-error" style="margin-top:1rem;">Not available for borrowing.</div>
+                        <?php endif; ?>
+                        <?php if (isset($_SESSION['user_id'])): ?>
+                            <form method="post" style="margin-top:0.7rem;">
+                                <input type="hidden" name="reserve_book_id" value="<?= $book['book_id'] ?>">
+                                <button type="submit" class="reserve-btn" style="width: 100%; max-width: 250px; background: #C5832B; color: #fff; display: inline-block; text-align: center; padding: 0.7rem 0; border-radius: 6px; font-weight: 600; border: none; font-size: 1rem;">
+                                    <i class="fas fa-calendar-plus"></i> Reserve
+                                </button>
+                            </form>
                         <?php endif; ?>
                     </div>
                 </div>

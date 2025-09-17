@@ -20,7 +20,7 @@
         <div class="welcome-container">
             <h2>Welcome to</h2> <h1>Book Stop</h1>
             <p>
-                Manage your library books, users, and borrowing records with ease.<br>
+                Borrow books with ease.<br>
                 Please <a href="index.php">login</a> or <a href="index.php">register</a> to get started.
             </p>
         </div>

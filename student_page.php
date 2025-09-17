@@ -6,11 +6,28 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+// Check if user is not an admin (only regular users can access student page)
+if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin') {
+    header('Location: admin_page.php');
+    exit();
+}
+
 require_once 'config.php';
 
 $user = null;
 $success = '';
 $error = '';
+
+// Get unread notification count
+$unread_notifications = 0;
+if (isset($_SESSION['user_id'])) {
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0");
+    $stmt->bind_param("i", $_SESSION['user_id']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $unread_notifications = $result->fetch_assoc()['count'];
+    $stmt->close();
+}
 
 // Use correct field names from your database: user_id, full_name, email
 try {
@@ -25,6 +42,18 @@ try {
     $user = $result->fetch_assoc();
     if (!$user) {
         throw new Exception("User not found");
+    }
+
+    $pending_extensions_count = 0;
+    if (isset($user_id)) {
+        $pending_extensions = $conn->prepare("SELECT COUNT(*) as total FROM extension_requests WHERE user_id = ? AND status = 'pending'");
+        if ($pending_extensions) {
+            $pending_extensions->bind_param("i", $user_id);
+            $pending_extensions->execute();
+            $pending_extensions_result = $pending_extensions->get_result();
+            $pending_extensions_count = $pending_extensions_result ? $pending_extensions_result->fetch_assoc()['total'] : 0;
+            $pending_extensions->close();
+        }
     }
 
     if (isset($_POST['update_profile'])) {
@@ -142,11 +171,12 @@ $settings_nav_class = ($current_section === 'settings') ? 'active' : '';
             </div>
             <nav>
                 <ul class="sidebar-menu">
-                      <li><a href="student_page.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'student_page.php' ? ' active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="student_page.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'student_page.php' ? ' active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                     <li><a href="my-profile.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-profile.php' ? ' active' : '' ?>"><i class="fas fa-user"></i> My Profile</a></li>
                     <li><a href="catalog.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'catalog.php' ? ' active' : '' ?>"><i class="fas fa-book"></i> Browse Books</a></li>
-                                        <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrow Book</a></li>
+                    <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrowed Books <?php if ($pending_extensions_count > 0): ?><span style="background:#C5832B;color:#fff;padding:2px 6px;border-radius:10px;font-size:0.7rem;"><?= $pending_extensions_count ?></span><?php endif; ?></a></li>
                     <li><a href="my-reservation.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-reservation.php' ? ' active' : '' ?>"><i class="fas fa-calendar-check"></i> My Reservations</a></li>
+                    <li><a href="notifications.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'notifications.php' ? ' active' : '' ?>"><i class="fas fa-bell"></i> Notifications <?php if ($unread_notifications > 0): ?><span style="background:#e74c3c;color:#fff;padding:2px 6px;border-radius:10px;font-size:0.7rem;"><?= $unread_notifications ?></span><?php endif; ?></a></li>
                     <li><a href="settings.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'settings.php' ? ' active' : '' ?>"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
@@ -200,8 +230,136 @@ $settings_nav_class = ($current_section === 'settings') ? 'active' : '';
                         ?>
                         <div style="font-size: 2rem; font-weight: bold;"><?php echo $overdue_count; ?></div>
                     </div>
+
+                    <!-- Pending Extension Requests Widget -->
+                    <div style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(44,62,80,0.08); padding: 2rem; min-width: 220px; text-align: center;">
+                        <i class="fas fa-clock fa-2x" style="color: #C5832B;"></i>
+                        <h3 style="margin: 1rem 0 0.5rem 0; font-size: 1.2rem;">Pending Extensions</h3>
+                        <?php
+                        $pending_extensions_count = 0;
+                        $pending_extensions = $conn->prepare("SELECT COUNT(*) as total FROM extension_requests WHERE user_id = ? AND status = 'pending'");
+                        if ($pending_extensions) {
+                            $pending_extensions->bind_param("i", $user_id);
+                            $pending_extensions->execute();
+                            $pending_extensions_result = $pending_extensions->get_result();
+                            $pending_extensions_count = $pending_extensions_result ? $pending_extensions_result->fetch_assoc()['total'] : 0;
+                            $pending_extensions->close();
+                        } else {
+                            echo "<div style='color:#b71c1c;'>Query error: " . htmlspecialchars($conn->error) . "</div>";
+                        }
+                        ?>
+                        <div style="font-size: 2rem; font-weight: bold;"><?php echo $pending_extensions_count; ?></div>
+                    </div>
                 </div>
                 <!-- Dashboard Widgets End -->
+
+                <!-- Pending Extension Payments -->
+                <?php
+                $pending_extensions = $conn->prepare("SELECT f.fine_id, f.amount, b.title, br.borrow_date, br.due_date 
+                                                    FROM fines f 
+                                                    JOIN borrow_records br ON f.borrow_id = br.borrow_id 
+                                                    JOIN books b ON br.book_id = b.book_id 
+                                                    WHERE br.user_id = ? AND f.paid = 0 
+                                                    AND f.fine_id IN (
+                                                        SELECT er.fine_id FROM extension_requests er 
+                                                        WHERE er.user_id = ? AND er.status = 'approved'
+                                                    )");
+                if ($pending_extensions) {
+                    $pending_extensions->bind_param("ii", $user_id, $user_id);
+                    $pending_extensions->execute();
+                    $pending_result = $pending_extensions->get_result();
+                    
+                    if ($pending_result && $pending_result->num_rows > 0) {
+                        echo '<div style="margin: 2rem auto; max-width: 900px;">
+                            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                                <h3 style="color: #856404; margin-bottom: 1rem;">
+                                    <i class="fas fa-exclamation-triangle"></i> Pending Extension Payments
+                                </h3>
+                                <p style="color: #856404; margin-bottom: 1rem;">
+                                    You have approved extension requests that require payment to activate.
+                                </p>';
+                        
+                        while ($extension = $pending_result->fetch_assoc()) {
+                            echo '<div style="background: white; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; border-left: 4px solid #C5832B;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>' . htmlspecialchars($extension['title']) . '</strong><br>
+                                        <small style="color: #666;">Due: ' . date('M d, Y', strtotime($extension['due_date'])) . '</small>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 1.2rem; font-weight: bold; color: #C5832B;">
+                                            ₱' . number_format($extension['amount'], 2) . '
+                                        </div>
+                                        <a href="payment.php?fine_id=' . $extension['fine_id'] . '&type=extension" 
+                                           style="background: #C5832B; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">
+                                            <i class="fas fa-credit-card"></i> Pay Now
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>';
+                        }
+                        
+                        echo '</div></div>';
+                    }
+                    $pending_extensions->close();
+                }
+                ?>
+
+                <!-- Pending Extension Requests -->
+                <?php
+                $pending_requests = $conn->prepare("SELECT er.*, b.title, br.due_date 
+                                                  FROM extension_requests er 
+                                                  JOIN books b ON er.book_id = b.book_id 
+                                                  JOIN borrow_records br ON er.book_id = br.book_id AND er.user_id = br.user_id
+                                                  WHERE er.user_id = ? AND er.status = 'pending' 
+                                                  ORDER BY er.request_date DESC");
+                if ($pending_requests) {
+                    $pending_requests->bind_param("i", $user_id);
+                    $pending_requests->execute();
+                    $requests_result = $pending_requests->get_result();
+                    
+                    if ($requests_result && $requests_result->num_rows > 0) {
+                        echo '<div style="margin: 2rem auto; max-width: 900px;">
+                            <div style="background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                                <h3 style="color: #1565c0; margin-bottom: 1rem;">
+                                    <i class="fas fa-clock"></i> Pending Extension Requests
+                                </h3>
+                                <p style="color: #1565c0; margin-bottom: 1rem;">
+                                    Your extension requests are being reviewed by the administrator.
+                                </p>';
+                        
+                        while ($request = $requests_result->fetch_assoc()) {
+                            echo '<div style="background: white; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; border-left: 4px solid #2196f3;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>' . htmlspecialchars($request['title']) . '</strong><br>
+                                        <small style="color: #666;">
+                                            Requested: ' . date('M d, Y', strtotime($request['request_date'])) . ' | 
+                                            Extension: ' . $request['extension_days'] . ' days | 
+                                            Current Due: ' . date('M d, Y', strtotime($request['due_date'])) . '
+                                        </small>';
+                            
+                            if ($request['fine_amount'] > 0) {
+                                echo '<br><small style="color: #C5832B; font-weight: bold;">
+                                    Fine if approved: ₱' . number_format($request['fine_amount'], 2) . '
+                                </small>';
+                            }
+                            
+                            echo '</div>
+                                    <div style="text-align: right;">
+                                        <span style="background: #2196f3; color: white; padding: 0.3rem 0.8rem; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">
+                                            Pending Review
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>';
+                        }
+                        
+                        echo '</div></div>';
+                    }
+                    $pending_requests->close();
+                }
+                ?>
 
                 <!-- Recent Activity Table -->
                 <div style="margin: 3rem auto 0 auto; max-width: 900px;">

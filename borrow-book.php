@@ -9,8 +9,34 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+// Check if user is not an admin (only regular users can access borrow book page)
+if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin') {
+    header('Location: admin_page.php');
+    exit();
+}
+
 $user_id = (int)$_SESSION['user_id'];
 $user = null;
+
+// Get notification counts
+$unread_notifications = 0;
+$pending_extensions_count = 0;
+
+// Get unread notification count
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$unread_notifications = $result->fetch_assoc()['count'];
+$stmt->close();
+
+// Get pending extension requests count
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM extension_requests WHERE user_id = ? AND status = 'pending'");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$pending_extensions_count = $result->fetch_assoc()['count'];
+$stmt->close();
 
 // Fetch user info
 $stmt = $conn->prepare("SELECT full_name, email, user_type FROM users WHERE user_id = ?");
@@ -78,34 +104,55 @@ if ($book_id <= 0) {
 // Handle extension request submission
 if (isset($_POST['request_extension']) && isset($_POST['borrow_id'])) {
     $borrow_id = (int)$_POST['borrow_id'];
-    // Get borrow record info
-    $stmt = $conn->prepare("SELECT * FROM borrow_records WHERE borrow_id = ? AND user_id = ?");
-    $stmt->bind_param("ii", $borrow_id, $user_id);
-    $stmt->execute();
-    $borrow = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if ($borrow && empty($borrow['return_date'])) {
-        // Check if already requested
-        $stmt = $conn->prepare("SELECT * FROM extension_requests WHERE user_id = ? AND book_id = ? AND status = 'pending'");
-        $stmt->bind_param("ii", $user_id, $borrow['book_id']);
-        $stmt->execute();
-        $already_requested = $stmt->get_result()->num_rows > 0;
-        $stmt->close();
-        if ($already_requested) {
-            $error = "You already have a pending extension request for this book.";
-        } else {
-            $new_return_date = date('Y-m-d', strtotime($borrow['due_date'] . ' +7 days'));
-            $stmt = $conn->prepare("INSERT INTO extension_requests (book_id, user_id, request_date, new_return_date, status) VALUES (?, ?, NOW(), ?, 'pending')");
-            $stmt->bind_param("iis", $borrow['book_id'], $user_id, $new_return_date);
-            if ($stmt->execute()) {
-                $success = "Extension request submitted!";
-            } else {
-                $error = "Failed to submit extension request.";
-            }
-            $stmt->close();
-        }
+    $extension_days = (int)($_POST['extension_days'] ?? 7); // Default to 7 days if not specified
+    
+    // Validate extension days (1-30 days)
+    if ($extension_days < 1 || $extension_days > 30) {
+        $error = "Extension period must be between 1 and 30 days.";
     } else {
-        $error = "Invalid borrow record or already returned.";
+        // Get borrow record info with book fine
+        $stmt = $conn->prepare("SELECT br.*, b.book_fine, b.book_id FROM borrow_records br JOIN books b ON br.book_id = b.book_id WHERE br.borrow_id = ? AND br.user_id = ?");
+        $stmt->bind_param("ii", $borrow_id, $user_id);
+        $stmt->execute();
+        $borrow = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        if ($borrow && empty($borrow['return_date'])) {
+            // Check if already requested - fix: check for borrow_id instead of book_id
+            $stmt = $conn->prepare("SELECT * FROM extension_requests WHERE user_id = ? AND book_id = ? AND status = 'pending'");
+            $stmt->bind_param("ii", $user_id, $borrow['book_id']);
+            $stmt->execute();
+            $already_requested = $stmt->get_result()->num_rows > 0;
+            $stmt->close();
+            
+            if ($already_requested) {
+                $error = "You already have a pending extension request for this book.";
+            } else {
+                // Calculate fine based on extension days
+                $base_fine = $borrow['book_fine'];
+                $calculated_fine = $base_fine;
+                
+                if ($extension_days > 3) {
+                    $extra_days = $extension_days - 3;
+                    $additional_fine = $base_fine * 0.10 * $extra_days; // 10% per day after 3 days
+                    $calculated_fine = $base_fine + $additional_fine;
+                }
+                
+                $new_return_date = date('Y-m-d', strtotime($borrow['due_date'] . ' +' . $extension_days . ' days'));
+                $stmt = $conn->prepare("INSERT INTO extension_requests (book_id, user_id, request_date, new_return_date, status, fine_amount, extension_days) VALUES (?, ?, NOW(), ?, 'pending', ?, ?)");
+                $stmt->bind_param("iisdi", $borrow['book_id'], $user_id, $new_return_date, $calculated_fine, $extension_days);
+                
+                if ($stmt->execute()) {
+                    $fine_message = $calculated_fine > 0 ? " Note: A fine of ₱" . number_format($calculated_fine, 2) . " will be applied if approved." : "";
+                    $success = "Extension request submitted for " . $extension_days . " days!" . $fine_message;
+                } else {
+                    $error = "Failed to submit extension request.";
+                }
+                $stmt->close();
+            }
+        } else {
+            $error = "Invalid borrow record or already returned.";
+        }
     }
 }
 ?>
@@ -116,6 +163,227 @@ if (isset($_POST['request_extension']) && isset($_POST['borrow_id'])) {
     <title>Borrow Book | Book Stop</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script>
+        function openExtensionForm(borrowId, baseFine, bookTitle) {
+            // Create modal overlay
+            const modal = document.createElement('div');
+            modal.id = 'extensionModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            // Create modal content
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                padding: 2rem;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                max-width: 500px;
+                width: 90%;
+                position: relative;
+            `;
+            
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0; color: #532c2e;">Request Extension</h3>
+                    <button onclick="closeExtensionForm()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <strong>Book:</strong> ${bookTitle}
+                </div>
+                
+                <form method="post" id="extensionForm" onsubmit="handleFormSubmit(event)">
+                    <input type="hidden" name="borrow_id" value="${borrowId}">
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="extension_days" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #532c2e;">
+                            Number of Days to Extend:
+                        </label>
+                        <input type="number" id="extension_days" name="extension_days" min="1" max="30" value="7" 
+                               style="width: 100%; padding: 0.8rem; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem;"
+                               onchange="calculateFine(${baseFine})" onkeyup="calculateFine(${baseFine})">
+                        <small style="color: #666;">Enter a number between 1 and 30 days</small>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">
+                        <div style="margin-bottom: 0.5rem;">
+                            <strong>Fine Calculation:</strong>
+                        </div>
+                        <div id="fineBreakdown" style="font-size: 0.9rem; color: #666;">
+                            Calculating...
+                        </div>
+                        <div style="margin-top: 0.5rem; font-size: 1.1rem; font-weight: bold; color: #e74c3c;">
+                            Total Fine: <span id="totalFine">₱0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div id="submitFeedback" style="display: none; margin-bottom: 1rem; padding: 1rem; border-radius: 6px; text-align: center;"></div>
+                    
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button type="button" onclick="closeExtensionForm()" 
+                                style="padding: 0.8rem 1.5rem; border: 2px solid #ddd; background: white; color: #666; border-radius: 6px; cursor: pointer;">
+                            Cancel
+                        </button>
+                        <button type="submit" name="request_extension" id="submitBtn"
+                                style="padding: 0.8rem 1.5rem; background: #C5832B; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                            Submit Request
+                        </button>
+                    </div>
+                </form>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Calculate initial fine
+            calculateFine(baseFine);
+        }
+        
+        function calculateFine(baseFine) {
+            const daysInput = document.getElementById('extension_days');
+            const days = parseInt(daysInput.value) || 0;
+            const breakdownDiv = document.getElementById('fineBreakdown');
+            const totalFineSpan = document.getElementById('totalFine');
+            
+            if (days < 1 || days > 30) {
+                breakdownDiv.innerHTML = '<span style="color: #e74c3c;">Please enter a valid number of days (1-30)</span>';
+                totalFineSpan.textContent = '₱0.00';
+                return;
+            }
+            
+            let calculatedFine = baseFine;
+            let breakdown = `Base fine: ₱${baseFine.toFixed(2)}`;
+            
+            if (days > 3) {
+                const extraDays = days - 3;
+                const additionalFine = baseFine * 0.10 * extraDays;
+                calculatedFine = baseFine + additionalFine;
+                breakdown += `<br>Extra days (${extraDays} days × 10%): ₱${additionalFine.toFixed(2)}`;
+            } else {
+                breakdown += '<br>No additional charges (3 days or less)';
+            }
+            
+            breakdownDiv.innerHTML = breakdown;
+            totalFineSpan.textContent = `₱${calculatedFine.toFixed(2)}`;
+        }
+        
+        function closeExtensionForm() {
+            const modal = document.getElementById('extensionModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const submitBtn = document.getElementById('submitBtn');
+            const feedbackDiv = document.getElementById('submitFeedback');
+            const formData = new FormData(form);
+            
+            // Validate form data
+            const extensionDays = formData.get('extension_days');
+            if (!extensionDays || extensionDays < 1 || extensionDays > 30) {
+                feedbackDiv.style.display = 'block';
+                feedbackDiv.style.background = '#fff3e0';
+                feedbackDiv.style.color = '#f57c00';
+                feedbackDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please enter a valid number of days (1-30).';
+                return;
+            }
+            
+            // Disable submit button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            
+            // Show loading feedback
+            feedbackDiv.style.display = 'block';
+            feedbackDiv.style.background = '#e3f2fd';
+            feedbackDiv.style.color = '#1976d2';
+            feedbackDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting your extension request...';
+            
+            // Check if fetch is supported
+            if (typeof fetch !== 'undefined') {
+                // Submit form via AJAX
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    // Check if submission was successful (look for success message in response)
+                    if (data.includes('Extension request submitted')) {
+                        showSuccessFeedback();
+                    } else {
+                        showErrorFeedback();
+                    }
+                })
+                .catch(error => {
+                    showErrorFeedback();
+                });
+            } else {
+                // Fallback for older browsers - submit form normally
+                showSuccessFeedback();
+                setTimeout(() => {
+                    form.submit();
+                }, 1000);
+            }
+        }
+        
+        function showSuccessFeedback() {
+            const submitBtn = document.getElementById('submitBtn');
+            const feedbackDiv = document.getElementById('submitFeedback');
+            
+            // Show success message
+            feedbackDiv.style.background = '#e8f5e8';
+            feedbackDiv.style.color = '#2e7d32';
+            feedbackDiv.innerHTML = '<i class="fas fa-check-circle"></i> Extension request submitted successfully!';
+            
+            // Update submit button
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Submitted';
+            submitBtn.style.background = '#2e7d32';
+            
+            // Close modal after 2 seconds
+            setTimeout(() => {
+                closeExtensionForm();
+                // Reload page to show updated status
+                window.location.reload();
+            }, 2000);
+        }
+        
+        function showErrorFeedback() {
+            const submitBtn = document.getElementById('submitBtn');
+            const feedbackDiv = document.getElementById('submitFeedback');
+            
+            // Show error message
+            feedbackDiv.style.background = '#ffebee';
+            feedbackDiv.style.color = '#c62828';
+            feedbackDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error submitting request. Please try again.';
+            
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit Request';
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('extensionModal');
+            if (modal && event.target === modal) {
+                closeExtensionForm();
+            }
+        });
+    </script>
 </head>
 <body>
     <header class="dashboard-header">
@@ -136,8 +404,9 @@ if (isset($_POST['request_extension']) && isset($_POST['borrow_id'])) {
                     <li><a href="student_page.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'student_page.php' ? ' active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                     <li><a href="my-profile.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-profile.php' ? ' active' : '' ?>"><i class="fas fa-user"></i> My Profile</a></li>
                     <li><a href="catalog.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'catalog.php' ? ' active' : '' ?>"><i class="fas fa-book"></i> Browse Books</a></li>
-                                        <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrow Book</a></li>
+                    <li><a href="borrow-book.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'borrow-book.php' ? ' active' : '' ?>"><i class="fas fa-book-reader"></i> Borrowed Book <?php if ($pending_extensions_count > 0): ?><span style="background:#C5832B;color:#fff;padding:2px 6px;border-radius:10px;font-size:0.7rem;"><?= $pending_extensions_count ?></span><?php endif; ?></a></li>
                     <li><a href="my-reservation.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'my-reservation.php' ? ' active' : '' ?>"><i class="fas fa-calendar-check"></i> My Reservations</a></li>
+                    <li><a href="notifications.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'notifications.php' ? ' active' : '' ?>"><i class="fas fa-bell"></i> Notifications <?php if ($unread_notifications > 0): ?><span style="background:#e74c3c;color:#fff;padding:2px 6px;border-radius:10px;font-size:0.7rem;"><?= $unread_notifications ?></span><?php endif; ?></a></li>
                     <li><a href="settings.php" class="nav-link<?= basename($_SERVER['PHP_SELF']) == 'settings.php' ? ' active' : '' ?>"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
@@ -219,7 +488,7 @@ if (isset($_POST['request_extension']) && isset($_POST['borrow_id'])) {
                             }
                             // Extension Request button
                             // Check if already requested
-                            $ext_stmt = $conn->prepare("SELECT * FROM extension_requests WHERE user_id = ? AND book_id = ? AND status = 'pending'");
+                            $ext_stmt = $conn->prepare("SELECT * FROM extension_requests WHERE user_id = ? AND book_id = (SELECT book_id FROM borrow_records WHERE borrow_id = ?) AND status = 'pending'");
                             $ext_stmt->bind_param("ii", $user_id, $row['borrow_id']);
                             $ext_stmt->execute();
                             $already_requested = $ext_stmt->get_result()->num_rows > 0;
@@ -229,10 +498,9 @@ if (isset($_POST['request_extension']) && isset($_POST['borrow_id'])) {
                                         <i class='fas fa-hourglass-half'></i> Extension Requested
                                     </span>";
                             } else {
-                                echo "<br><form method='post' style='display:inline;margin-top:0.5rem;'>
-                                        <input type='hidden' name='borrow_id' value='" . $row['borrow_id'] . "'>
-                                        <button type='submit' name='request_extension' class='btn' style='background:#C5832B;color:#fff;padding:0.3rem 0.8rem;font-size:0.95rem;border-radius:6px;margin-top:0.5rem;'><i class='fas fa-hourglass-half'></i> Request Extension</button>
-                                    </form>";
+                                echo "<br><button type='button' class='btn' style='background:#C5832B;color:#fff;padding:0.3rem 0.8rem;font-size:0.95rem;border-radius:6px;margin-top:0.5rem;' onclick='openExtensionForm(" . $row['borrow_id'] . ", " . $row['book_fine'] . ", \"" . htmlspecialchars($row['title']) . "\")'>
+                                        <i class='fas fa-hourglass-half'></i> Request Extension
+                                    </button>";
                             }
                             echo "</td>";
                         } else {

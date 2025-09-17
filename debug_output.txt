@@ -1,0 +1,17 @@
+=== Extension Request System Debug ===
+✅ Database connection successful
+✅ extension_requests table exists
+Current columns: request_id, book_id, user_id, request_date, new_return_date, status, fine_amount, extension_days, fine_id
+✅ Column 'fine_amount' exists
+✅ Column 'extension_days' exists
+✅ Column 'fine_id' exists
+✅ notifications table exists
+✅ fine_paid column exists in borrow_records
+Users: 10
+Books: 8
+Borrow records: 25
+Extension requests: 4
+=== Testing Extension Request Creation ===
+Sample user: 2 - Kyrie Earl Gabriel P. Amper
+Sample book: 1 - The Great Gatsby (Fine: ₱50)
+❌ User has not borrowed this book

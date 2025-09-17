@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="add-book-container">
-        <a href="admin_page.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to Admin Dashboard</a>
+        <a href="manage-books.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to Books</a>
         <h2><i class="fas fa-plus"></i> Add New Book</h2>
         <?php if ($success): ?>
             <div class="alert alert-success"><?= $success ?></div>

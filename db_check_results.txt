@@ -1,0 +1,113 @@
+=== DATABASE CHECK RESULTS ===
+
+✅ Database connection successful
+
+1. EXTENSION_REQUESTS TABLE STRUCTURE:
+  - request_id: int(11) (Default: )
+  - book_id: int(11) (Default: )
+  - user_id: int(11) (Default: )
+  - request_date: datetime (Default: current_timestamp())
+  - new_return_date: date (Default: )
+  - status: enum('pending','approved','denied') (Default: pending)
+  - fine_amount: decimal(6,2) (Default: 0.00)
+  - extension_days: int(11) (Default: 7)
+  - fine_id: int(11) (Default: )
+
+2. EXTENSION_REQUESTS DATA:
+  - ID: 6, User: Kyrie Earl Gabriel P. Amper, Book: The Catcher in the Rye
+    Days: 14, Fine: ₱105.00, Status: pending
+    New Due: 2025-07-28, Requested: 2025-06-24 08:45:08
+
+  - ID: 5, User: Kyrie Earl Gabriel P. Amper, Book: The Catcher in the Rye
+    Days: 7, Fine: ₱70.00, Status: approved
+    New Due: 2025-07-14, Requested: 2025-06-24 08:43:01
+
+  - ID: 4, User: Cielo Santos, Book: The Great Gatsby
+    Days: 5, Fine: ₱50.00, Status: approved
+    New Due: 2025-06-29, Requested: 2025-06-24 07:13:54
+
+  - ID: 3, User: Greg Lazarte, Book: 1984
+    Days: 7, Fine: ₱70.00, Status: approved
+    New Due: 2025-07-15, Requested: 2025-06-24 06:54:21
+
+  - ID: 2, User: Greg Lazarte, Book: 1984
+    Days: 7, Fine: ₱50.00, Status: denied
+    New Due: 2025-07-15, Requested: 2025-06-24 06:43:36
+
+  - ID: 1, User: Kyrie Earl Gabriel P. Amper, Book: Pride and Prejudice
+    Days: 7, Fine: ₱50.00, Status: approved
+    New Due: 2025-07-14, Requested: 2025-06-24 01:49:39
+
+3. ACTIVE BORROW RECORDS:
+  - Borrow ID: 19, User: Greg Lazarte, Book: 1984
+    Borrow Date: 2025-06-24, Due Date: 2025-07-08, Status: ACTIVE
+    Fine: ₱50, Fine Paid: No
+
+  - Borrow ID: 26, User: Cielo, Book: The Catcher in the Rye
+    Borrow Date: 2025-06-24, Due Date: 2025-07-08, Status: ACTIVE
+    Fine: ₱50, Fine Paid: No
+
+  - Borrow ID: 18, User: Kyrie Earl Gabriel P. Amper, Book: The Catcher in the Rye
+    Borrow Date: 2025-06-23, Due Date: 2025-07-14, Status: ACTIVE
+    Fine: ₱50, Fine Paid: No
+
+  - Borrow ID: 7, User: Cielo, Book: The Great Gatsby
+    Borrow Date: 2025-06-22, Due Date: 2025-06-20, Status: OVERDUE
+    Fine: ₱50, Fine Paid: No
+
+4. USERS SUMMARY:
+  - ID: 2, Name: Kyrie Earl Gabriel P. Amper, Type: user
+  - ID: 3, Name: Admin, Type: admin
+  - ID: 4, Name: Lance Robert Macorol, Type: admin
+  - ID: 5, Name: Cielo Santos, Type: admin
+  - ID: 6, Name: Cielo Santos, Type: user
+  - ID: 7, Name: Greg Lazarte, Type: admin
+  - ID: 8, Name: Cielo, Type: admin
+  - ID: 9, Name: Lance Robert Macorol, Type: admin
+  - ID: 10, Name: marianne, Type: user
+  - ID: 11, Name: Cielo, Type: user
+  - ID: 12, Name: Test Admin, Type: admin
+
+5. BOOKS SUMMARY:
+  - ID: 1, Title: The Great Gatsby, Fine: ₱50, Available: 3
+  - ID: 2, Title: To Kill a Mockingbird, Fine: ₱50, Available: 3
+  - ID: 3, Title: 1984, Fine: ₱50, Available: 2
+  - ID: 4, Title: Pride and Prejudice, Fine: ₱50, Available: 4
+  - ID: 5, Title: The Hobbit, Fine: ₱50, Available: 4
+  - ID: 6, Title: The Catcher in the Rye, Fine: ₱50, Available: 3
+  - ID: 7, Title: The Lord of the Rings, Fine: ₱50, Available: 5
+  - ID: 8, Title: The Alchemist, Fine: ₱50, Available: 4
+
+6. NOTIFICATIONS:
+  Total notifications: 3
+  - ID: 3, User: 2, Title: Extension Request Approved
+    Type: extension_approved, Read: No, Created: 2025-06-24 08:44:35
+  - ID: 2, User: 6, Title: Extension Request Approved
+    Type: extension_approved, Read: No, Created: 2025-06-24 07:35:16
+  - ID: 1, User: 7, Title: Extension Request Approved
+    Type: extension_approved, Read: No, Created: 2025-06-24 07:04:11
+
+7. FINES:
+  Total fines: 5
+  - Fine ID: 5, Borrow ID: 18, User: Kyrie Earl Gabriel P. Amper
+    Book: The Catcher in the Rye, Amount: ₱70.00, Paid: No
+  - Fine ID: 4, Borrow ID: 25, User: Cielo
+    Book: 1984, Amount: ₱150.00, Paid: Yes
+  - Fine ID: 3, Borrow ID: 19, User: Greg Lazarte
+    Book: 1984, Amount: ₱70.00, Paid: No
+
+8. TABLE RECORD COUNTS:
+  users: 11 records
+  books: 8 records
+  borrow_records: 26 records
+  extension_requests: 6 records
+  notifications: 3 records
+  fines: 5 records
+
+9. TESTING EXTENSION REQUEST CREATION:
+  Found test user: Kyrie Earl Gabriel P. Amper (ID: 2)
+  Book: The Catcher in the Rye (Fine: ₱50)
+  Borrow ID: 18, Due Date: 2025-07-14
+  ⚠️ Extension already requested for this book
+
+=== END OF DATABASE CHECK ===

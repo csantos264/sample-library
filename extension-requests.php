@@ -21,7 +21,7 @@ if (isset($_SESSION['user_id'])) {
     $stmt->close();
 }
 
-// Fetch extension requests
+// Fetch extension requests with stored fine amount
 $query = "
     SELECT er.*, b.title, u.full_name
     FROM extension_requests er
@@ -57,6 +57,7 @@ $result = $conn->query($query);
             <li><a href="manage-users.php" class="nav-link"><i class="fas fa-users"></i> Users</a></li>
             <li><a href="manage-borrow.php" class="nav-link"><i class="fas fa-history"></i> Borrowings</a></li>
             <li><a href="extension-requests.php" class="nav-link active"><i class="fas fa-hourglass-half"></i> Extension Requests</a></li>
+            <li><a href="reservation-requests.php" class="nav-link"><i class="fas fa-bell"></i> Reservation Requests</a></li>
         </ul>
     </aside>
 
@@ -70,7 +71,9 @@ $result = $conn->query($query);
                             <th>Request ID</th>
                             <th>User</th>
                             <th>Book</th>
+                            <th>Extension Period</th>
                             <th>New Return Date</th>
+                            <th>Extension Fine</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -82,7 +85,23 @@ $result = $conn->query($query);
                                     <td><?= $row['request_id'] ?></td>
                                     <td><?= htmlspecialchars($row['full_name']) ?></td>
                                     <td><?= htmlspecialchars($row['title']) ?></td>
+                                    <td>
+                                        <span style="color: #2980b9; font-weight: bold;">
+                                            <?= $row['extension_days'] ?? 7 ?> days
+                                        </span>
+                                    </td>
                                     <td><?= htmlspecialchars($row['new_return_date']) ?></td>
+                                    <td>
+                                        <span style="color: #e74c3c; font-weight: bold;">
+                                            ₱<?= number_format($row['fine_amount'], 2) ?>
+                                        </span>
+                                        <?php if (($row['extension_days'] ?? 7) > 3): ?>
+                                            <br><small style="color: #7f8c8d; font-size: 0.8em;">
+                                                Base: ₱<?= number_format($row['fine_amount'] / (1 + 0.10 * (($row['extension_days'] ?? 7) - 3)), 2) ?> 
+                                                + <?= (($row['extension_days'] ?? 7) - 3) ?> extra days
+                                            </small>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <?php if ($row['status'] === 'pending'): ?>
                                             <span style="color: #e67e22;">Pending</span>
@@ -96,6 +115,7 @@ $result = $conn->query($query);
                                         <?php if ($row['status'] === 'pending'): ?>
                                             <form action="process-extension.php" method="post" style="display: flex; gap: 5px; align-items: center;">
                                                 <input type="hidden" name="request_id" value="<?= $row['request_id'] ?>">
+                                                <input type="hidden" name="fine_amount" value="<?= $row['fine_amount'] ?>">
                                                 <button type="submit" name="action" value="approve" class="button approve">Approve</button>
                                                 <button type="submit" name="action" value="deny" class="button delete">Deny</button>
                                             </form>
@@ -106,7 +126,7 @@ $result = $conn->query($query);
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
-                            <tr><td colspan="6">No extension requests found.</td></tr>
+                            <tr><td colspan="8">No extension requests found.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
